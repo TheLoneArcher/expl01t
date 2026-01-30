@@ -3,8 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-const apiKey = String.fromEnvironment('GEMINI_API_KEY');
-print("API KEY LENGTH: ${apiKey.length}");
 
 class Message {
   final String role; // 'user', 'model', 'system'
