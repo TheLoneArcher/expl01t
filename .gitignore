@@ -1,0 +1,72 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate.log
+.gradle/
+local.properties
+src/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+**/.idea/
+
+# The .vscode/ directory contains launch.json, which is used to launch the app in the debugger,
+# and settings.json, which contains settings for the IDE.
+# Because settings.json can contain paths specific to your machine, it is usually not tracked.
+.vscode/
+
+# Flutter/Dart/Pub-related
+# Note: As of Flutter 1.19.0, the .packages file is deprecated.
+.packages
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+
+# Android-related
+android/local.properties
+android/**/generated/
+android/app/src/main/res/drawable-*/
+android/app/src/main/res/mipmap-*/
+android/sdk.dir
+android/local.properties
+
+# iOS-related
+ios/**/config.h
+ios/**/config.m
+ios/**/module.modulemap
+ios/**/Pods
+ios/**/.flutter-plugins
+ios/**/.flutter-plugins-dependencies
+ios/**/ServiceDefinitions.json
+ios/**/Generated.xcconfig
+ios/**/flutter_export_environment.sh
+ios/**/Runner.app
+ios/**/Runner.ipa
+ios/**/Runner.managed
+ios/**/Runner.archive
+
+# Symbolication related
+app.*.symbols
+
+# Executable symbols
+app.*.map.json
+
+# Web related
+lib/generated_plugin_registrant.dart
+
+# Exceptions to above rules
+!android/app/src/main/res/drawable
+!android/app/src/main/res/mipmap

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "47159019208",
+    "project_id": "campx-360de",
+    "storage_bucket": "campx-360de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:47159019208:android:870f03bb4fc389712507fd",
+        "android_client_info": {
+          "package_name": "com.campx.camp_x"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBD8WvKke64J7qvYDtxcQVGoBXv5DYEqZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
