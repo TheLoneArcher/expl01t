@@ -12,6 +12,7 @@ migrate.log
 .gradle/
 local.properties
 src/
+.env
 
 # IntelliJ related
 *.iml

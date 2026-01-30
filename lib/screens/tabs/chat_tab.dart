@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class Message {
   final String role; // 'user', 'model', 'system'
@@ -24,8 +25,8 @@ class _ChatTabState extends State<ChatTab> {
   final List<Message> _messages = [];
   bool _isLoading = false;
 
-  // Replace with your actual Gemini API key
-  static const String _apiKey = "AIzaSyBdqrhJ5ZgkXkEiCm7JDiqQgG69giynG-A";
+  // Read API key from .env
+  static final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? "";
 
   late GenerativeModel _model;
   ChatSession? _chatSession;
