@@ -9,53 +9,72 @@ class SeedingService {
     final batch = _firestore.batch();
     final usersRef = _firestore.collection('users');
     
-    for (var u in data['students']) {
-      batch.set(usersRef.doc(u['uid']), u);
+    for (var u in (data['students'] as List)) {
+      final userMap = Map<String, dynamic>.from(u);
+      batch.set(usersRef.doc(userMap['uid']), userMap);
     }
-    for (var u in data['instructors']) {
-       batch.set(usersRef.doc(u['uid']), u);
+    for (var u in (data['instructors'] as List)) {
+       final userMap = Map<String, dynamic>.from(u);
+       batch.set(usersRef.doc(userMap['uid']), userMap);
     }
     await batch.commit();
     print("   -> Users Uploaded");
 
-    // 2. Subjects
+    // 2. Subjects (Top-level for SyllabusTab)
     final subBatch = _firestore.batch();
-    final subRef = _firestore.collection('classes').doc('BTECH_3').collection('subjects');
-    for (var s in data['subjects']) {
-      subBatch.set(subRef.doc(s['name']), s);
+    final subRef = _firestore.collection('subjects');
+    for (var s in (data['subjects'] as List)) {
+      final subMap = Map<String, dynamic>.from(s);
+      subBatch.set(subRef.doc(subMap['name']), subMap);
     }
     await subBatch.commit();
-     print("   -> Subjects Uploaded");
+    print("   -> Subjects Uploaded");
+
+    // 2.1 Meetings (Top-level for InstructorHomeView)
+    if (data['meetings'] != null) {
+      final meetBatch = _firestore.batch();
+      final meetRef = _firestore.collection('meetings');
+      for (var m in (data['meetings'] as List)) {
+        final meetMap = Map<String, dynamic>.from(m);
+        meetBatch.set(meetRef.doc(), {
+          ...meetMap,
+          'time': Timestamp.fromDate(DateTime.parse(meetMap['time'])),
+        });
+      }
+      await meetBatch.commit();
+      print("   -> Meetings Uploaded");
+    }
 
     // 3. Timetable
     final ttBatch = _firestore.batch();
-    final tt = data['timetable'] as Map<String, dynamic>;
-    tt.forEach((day, schedule) {
-      ttBatch.set(_firestore.collection('classes').doc('BTECH_3').collection('timetable').doc(day), schedule);
+    final ttMap = Map<String, dynamic>.from(data['timetable']);
+    ttMap.forEach((day, schedule) {
+      ttBatch.set(_firestore.collection('classes').doc('BTECH_3').collection('timetable').doc(day), Map<String, dynamic>.from(schedule));
     });
     await ttBatch.commit();
     print("   -> Timetable Uploaded");
 
     // 4. Exams
     final examBatch = _firestore.batch();
-    for (var e in data['exams']) {
-       final examRef = _firestore.collection('classes').doc('BTECH_3').collection('exams').doc(e['name']);
+    for (var e in (data['exams'] as List)) {
+       final examMap = Map<String, dynamic>.from(e);
+       final examRef = _firestore.collection('classes').doc('BTECH_3').collection('exams').doc(examMap['name']);
        examBatch.set(examRef, {
-         'name': e['name'],
-         'date': Timestamp.fromDate(DateTime.parse(e['date'])),
-         'totalMarks': e['total']
+         'name': examMap['name'],
+         'date': Timestamp.fromDate(DateTime.parse(examMap['date'])),
+         'totalMarks': examMap['total']
        });
        
-       // Marks (Simplified for JSON pipeline: Random generation still easiest here or rigorous JSON? doing dynamic for marks)
-       if (e['isCompleted'] == true) {
-         // Generating marks dynamically as JSON didn't have granular marks per student to save space
-         for (var u in data['students']) {
+       if (examMap['isCompleted'] == true) {
+         for (var u in (data['students'] as List)) {
+            final student = Map<String, dynamic>.from(u);
             Map<String, int> marks = {};
-            for (var s in data['subjects']) {
-              marks[s['name']] = 20; // Default pass
+            for (var s in (data['subjects'] as List)) {
+              final sub = Map<String, dynamic>.from(s);
+              marks[sub['name']] = 20; // Default pass
             }
-            await _firestore.collection('users').doc(u['uid']).collection('marks').doc(e['name']).set({
-              ...marks, 'examId': e['name']
+            await _firestore.collection('users').doc(student['uid']).collection('marks').doc(examMap['name']).set({
+              ...marks, 'examId': examMap['name']
             });
          }
        }
@@ -65,7 +84,7 @@ class SeedingService {
 
     // 5. Events & Attendance (Reuse existing logic or simplified)
     await _seedEvents(); 
-    await _seedAcademicData(); // Keeping dynamic generation for the massive attendance 5000 records
+    await _seedAcademicData(); 
     print("   -> Events & Attendance Generated");
   }
 

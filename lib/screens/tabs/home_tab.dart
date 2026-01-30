@@ -121,7 +121,7 @@ class HomeTab extends StatelessWidget {
                         children: [
                           _SectionHeader(title: "Homework Due", icon: Icons.assignment),
                           const SizedBox(height: 16),
-                          _buildHomeworkList(),
+                          _buildHomeworkList(context),
                         ],
                       ),
                     ),
@@ -138,7 +138,7 @@ class HomeTab extends StatelessWidget {
                    const SizedBox(height: 30),
                    _SectionHeader(title: "Homework Due", icon: Icons.assignment),
                    const SizedBox(height: 16),
-                   _buildHomeworkList(),
+                   _buildHomeworkList(context),
                 ],
               );
             },
@@ -181,13 +181,15 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildHomeworkList() {
+  Widget _buildHomeworkList(BuildContext context) {
+    final user = context.read<UserProvider>().user;
+    if (user == null) return const SizedBox();
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('classes')
           .doc('BTECH_3') 
           .collection('homework')
-          .where('date', isLessThanOrEqualTo: Timestamp.now()) 
           .orderBy('date', descending: true)
           .limit(5)
           .snapshots(),
@@ -198,18 +200,38 @@ class HomeTab extends StatelessWidget {
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) return const Text("No pending homework.");
 
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final data = docs[index].data() as Map<String, dynamic>;
-            return _TaskItem(
-              subject: data['subject'] ?? 'General',
-              description: data['description'] ?? 'Task',
-              date: (data['date'] as Timestamp).toDate(),
+        // We use a StreamBuilder inside to fetch completion statuses
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(user['uid'])
+              .collection('homework_status')
+              .snapshots(),
+          builder: (context, statusSnapshot) {
+            final completedIds = statusSnapshot.hasData 
+                ? statusSnapshot.data!.docs.where((doc) => doc['isCompleted'] == true).map((doc) => doc.id).toSet() 
+                : <String>{};
+
+            return ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: docs.length,
+              itemBuilder: (context, index) {
+                final doc = docs[index];
+                final data = doc.data() as Map<String, dynamic>;
+                final homeworkId = doc.id;
+                
+                return _TaskItem(
+                  id: homeworkId,
+                  uid: user['uid'],
+                  subject: data['subject'] ?? 'General',
+                  description: data['description'] ?? 'Task',
+                  date: (data['date'] as Timestamp).toDate(),
+                  isCompleted: completedIds.contains(homeworkId),
+                );
+              },
             );
-          },
+          }
         );
       },
     );
@@ -292,33 +314,64 @@ class _StatCard extends StatelessWidget {
 }
 
 class _TaskItem extends StatelessWidget {
+  final String id;
+  final String uid;
   final String subject;
   final String description;
   final DateTime date;
+  final bool isCompleted;
 
-  const _TaskItem({required this.subject, required this.description, required this.date});
+  const _TaskItem({
+    required this.id,
+    required this.uid,
+    required this.subject,
+    required this.description,
+    required this.date,
+    required this.isCompleted,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: isCompleted ? Colors.green.withOpacity(0.5) : Colors.transparent),
+      ),
       child: CheckboxListTile(
-        value: false, // Default unchecked
-        onChanged: (val) {}, // Todo: Implement local persistence
-        title: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold)),
+        value: isCompleted,
+        activeColor: Colors.greenAccent,
+        onChanged: (val) async {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('homework_status')
+              .doc(id)
+              .set({'isCompleted': val ?? false}, SetOptions(merge: true));
+        },
+        title: Text(
+          subject, 
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            decoration: isCompleted ? TextDecoration.lineThrough : null,
+            color: isCompleted ? Colors.grey : null,
+          )
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(description),
+            Text(description, style: TextStyle(color: isCompleted ? Colors.grey : null)),
             Text(
               "Due: ${DateFormat('MMM d').format(date)}",
-              style: TextStyle(fontSize: 12, color: Colors.redAccent.withOpacity(0.8)),
+              style: TextStyle(fontSize: 12, color: isCompleted ? Colors.grey : Colors.redAccent.withOpacity(0.8)),
             ),
           ],
         ),
         secondary: CircleAvatar(
-          backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-          child: Text(subject.substring(0, 1)),
+          backgroundColor: isCompleted ? Colors.green.withOpacity(0.1) : Theme.of(context).primaryColor.withOpacity(0.1),
+          child: isCompleted 
+            ? const Icon(Icons.check, color: Colors.green, size: 16)
+            : Text(subject.substring(0, 1), style: TextStyle(color: Theme.of(context).primaryColor)),
         ),
       ),
     );

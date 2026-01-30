@@ -1,37 +1,281 @@
 {
   "students": [
-    { "uid": "23AK1A3601", "name": "Student 1", "email": "23AK1A3601@campx.edu", "password": "23AK1A3601", "role": "student", "classId": "BTECH_3" },
-    { "uid": "23AK1A3602", "name": "Student 2", "email": "23AK1A3602@campx.edu", "password": "23AK1A3602", "role": "student", "classId": "BTECH_3" },
-    { "uid": "23AK1A3603", "name": "Student 3", "email": "23AK1A3603@campx.edu", "password": "23AK1A3603", "role": "student", "classId": "BTECH_3" },
-    { "uid": "23AK1A3604", "name": "Student 4", "email": "23AK1A3604@campx.edu", "password": "23AK1A3604", "role": "student", "classId": "BTECH_3" },
-    { "uid": "23AK1A3605", "name": "Student 5", "email": "23AK1A3605@campx.edu", "password": "23AK1A3605", "role": "student", "classId": "BTECH_3" }
+    {
+      "uid": "23AK1A3601",
+      "name": "Student 1",
+      "email": "23AK1A3601@campx.edu",
+      "password": "23AK1A3601",
+      "role": "student",
+      "classId": "BTECH_3"
+    },
+    {
+      "uid": "23AK1A3602",
+      "name": "Student 2",
+      "email": "23AK1A3602@campx.edu",
+      "password": "23AK1A3602",
+      "role": "student",
+      "classId": "BTECH_3"
+    },
+    {
+      "uid": "23AK1A3603",
+      "name": "Student 3",
+      "email": "23AK1A3603@campx.edu",
+      "password": "23AK1A3603",
+      "role": "student",
+      "classId": "BTECH_3"
+    },
+    {
+      "uid": "23AK1A3604",
+      "name": "Student 4",
+      "email": "23AK1A3604@campx.edu",
+      "password": "23AK1A3604",
+      "role": "student",
+      "classId": "BTECH_3"
+    },
+    {
+      "uid": "23AK1A3605",
+      "name": "Student 5",
+      "email": "23AK1A3605@campx.edu",
+      "password": "23AK1A3605",
+      "role": "student",
+      "classId": "BTECH_3"
+    }
   ],
   "instructors": [
-    { "uid": "INSTR01", "name": "Instructor 1", "email": "INSTR01@campx.edu", "password": "INSTR01", "role": "instructor" },
-    { "uid": "INSTR02", "name": "Instructor 2", "email": "INSTR02@campx.edu", "password": "INSTR02", "role": "instructor" }
+    {
+      "uid": "INSTR01",
+      "name": "Instructor 1",
+      "email": "INSTR01@campx.edu",
+      "password": "INSTR01",
+      "role": "instructor"
+    },
+    {
+      "uid": "INSTR02",
+      "name": "Instructor 2",
+      "email": "INSTR02@campx.edu",
+      "password": "INSTR02",
+      "role": "instructor"
+    }
   ],
   "subjects": [
-    { "name": "Machine Learning", "code": "ML" },
-    { "name": "English", "code": "ENG" },
-    { "name": "Blockchain", "code": "BLK" },
-    { "name": "Cyber Security", "code": "CYB" },
-    { "name": "Databases", "code": "DB" },
-    { "name": "Python", "code": "PY" }
+    {
+      "name": "Machine Learning",
+      "code": "ML",
+      "topics": [
+        {
+          "name": "Supervised Learning",
+          "status": "covered"
+        },
+        {
+          "name": "Regression Analysis",
+          "status": "covered"
+        },
+        {
+          "name": "Classification Models",
+          "status": "pending"
+        },
+        {
+          "name": "Neural Networks",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "name": "English",
+      "code": "ENG",
+      "topics": [
+        {
+          "name": "Technical Communication",
+          "status": "covered"
+        },
+        {
+          "name": "Professional Ethics",
+          "status": "covered"
+        },
+        {
+          "name": "Grammar Review",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "name": "Blockchain",
+      "code": "BLK",
+      "topics": [
+        {
+          "name": "Distributed Ledgers",
+          "status": "covered"
+        },
+        {
+          "name": "Smart Contracts",
+          "status": "pending"
+        },
+        {
+          "name": "Hyperledger Fabric",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "name": "Cyber Security",
+      "code": "CYB",
+      "topics": [
+        {
+          "name": "Ethical Hacking",
+          "status": "covered"
+        },
+        {
+          "name": "Network Vulnerability",
+          "status": "pending"
+        },
+        {
+          "name": "Digital Forensics",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "name": "Databases",
+      "code": "DB",
+      "topics": [
+        {
+          "name": "SQL Fundamental",
+          "status": "covered"
+        },
+        {
+          "name": "NoSQL Architecture",
+          "status": "pending"
+        },
+        {
+          "name": "Firebase Optimization",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "name": "Python",
+      "code": "PY",
+      "topics": [
+        {
+          "name": "Core Syntax",
+          "status": "covered"
+        },
+        {
+          "name": "Flask Development",
+          "status": "pending"
+        },
+        {
+          "name": "Automation Scripts",
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "meetings": [
+    {
+      "title": "Faculty Strategy Meeting",
+      "time": "2026-02-01T10:00:00Z",
+      "type": "Online (Zoom)",
+      "link": "https://zoom.us/j/campx_999"
+    },
+    {
+      "title": "Semester Planning: B.Tech",
+      "time": "2026-02-02T14:00:00Z",
+      "type": "Offline (Conf. Room 4B)",
+      "link": null
+    },
+    {
+      "title": "Student Grievance Cell",
+      "time": "2026-02-03T11:00:00Z",
+      "type": "Online (Meet)",
+      "link": "https://meet.google.com/xyz-123"
+    },
+    {
+      "title": "Emergency Staff Meeting",
+      "time": "2026-02-01T09:00:00Z",
+      "type": "Online (Zoom)",
+      "link": "https://zoom.us/j/emergency"
+    }
   ],
   "timetable": {
-    "Monday": { "p1": "Machine Learning", "p2": "English", "p3": "Blockchain", "p4": "Cyber Security", "p5": "Databases" },
-    "Tuesday": { "p1": "Python", "p2": "Machine Learning", "p3": "English", "p4": "Blockchain", "p5": "Cyber Security" },
-    "Wednesday": { "p1": "Databases", "p2": "Python", "p3": "Machine Learning", "p4": "English", "p5": "Blockchain" },
-    "Thursday": { "p1": "Cyber Security", "p2": "Databases", "p3": "Python", "p4": "Machine Learning", "p5": "English" },
-    "Friday": { "p1": "Blockchain", "p2": "Cyber Security", "p3": "Databases", "p4": "Python", "p5": "Machine Learning" }
+    "Monday": {
+      "p1": "Machine Learning",
+      "p2": "English",
+      "p3": "Blockchain",
+      "p4": "Cyber Security",
+      "p5": "Databases"
+    },
+    "Tuesday": {
+      "p1": "Python",
+      "p2": "Machine Learning",
+      "p3": "English",
+      "p4": "Blockchain",
+      "p5": "Cyber Security"
+    },
+    "Wednesday": {
+      "p1": "Databases",
+      "p2": "Python",
+      "p3": "Machine Learning",
+      "p4": "English",
+      "p5": "Blockchain"
+    },
+    "Thursday": {
+      "p1": "Cyber Security",
+      "p2": "Databases",
+      "p3": "Python",
+      "p4": "Machine Learning",
+      "p5": "English"
+    },
+    "Friday": {
+      "p1": "Blockchain",
+      "p2": "Cyber Security",
+      "p3": "Databases",
+      "p4": "Python",
+      "p5": "Machine Learning"
+    }
   },
   "exams": [
-    { "name": "Quarterly 1", "date": "2025-08-15T09:00:00Z", "total": 30, "isCompleted": true },
-    { "name": "Quarterly 2", "date": "2025-10-15T09:00:00Z", "total": 30, "isCompleted": true },
-    { "name": "Half Yearly", "date": "2025-12-10T09:00:00Z", "total": 100, "isCompleted": true },
-    { "name": "Quarterly 3", "date": "2026-01-20T09:00:00Z", "total": 30, "isCompleted": true },
-    { "name": "Quarterly 4", "date": "2026-02-20T09:00:00Z", "total": 30, "isCompleted": false },
-    { "name": "Prefinal", "date": "2026-04-10T09:00:00Z", "total": 100, "isCompleted": false },
-    { "name": "Final", "date": "2026-05-05T09:00:00Z", "total": 100, "isCompleted": false }
+    {
+      "name": "Quarterly 1",
+      "date": "2025-08-15T09:00:00Z",
+      "total": 30,
+      "isCompleted": true
+    },
+    {
+      "name": "Quarterly 2",
+      "date": "2025-10-15T09:00:00Z",
+      "total": 30,
+      "isCompleted": true
+    },
+    {
+      "name": "Half Yearly",
+      "date": "2025-12-10T09:00:00Z",
+      "total": 100,
+      "isCompleted": true
+    },
+    {
+      "name": "Quarterly 3",
+      "date": "2026-01-20T09:00:00Z",
+      "total": 30,
+      "isCompleted": true
+    },
+    {
+      "name": "Quarterly 4",
+      "date": "2026-02-20T09:00:00Z",
+      "total": 30,
+      "isCompleted": false
+    },
+    {
+      "name": "Prefinal",
+      "date": "2026-04-10T09:00:00Z",
+      "total": 100,
+      "isCompleted": false
+    },
+    {
+      "name": "Final",
+      "date": "2026-05-05T09:00:00Z",
+      "total": 100,
+      "isCompleted": false
+    }
   ]
 }

@@ -4,6 +4,7 @@ import 'package:camp_x/screens/tabs/home_tab.dart';
 import 'package:camp_x/screens/tabs/calendar_tab.dart';
 import 'package:camp_x/screens/tabs/marks_tab.dart';
 import 'package:camp_x/screens/tabs/profile_tab.dart';
+import 'package:camp_x/screens/tabs/chat_tab.dart';
 
 
 class DashboardScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -27,7 +28,6 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
     _tabController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -41,12 +41,14 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         bottom: TabBar(
           controller: _tabController,
           labelColor: theme.primaryColor,
+          isScrollable: true,
           unselectedLabelColor: theme.textTheme.bodyMedium?.color,
           indicatorColor: theme.primaryColor,
-          labelStyle: GoogleFonts.orbitron(fontSize: 14, fontWeight: FontWeight.bold),
+          labelStyle: GoogleFonts.orbitron(fontSize: 12, fontWeight: FontWeight.bold),
           tabs: const [
             Tab(text: "HOME", icon: Icon(Icons.dashboard_outlined)),
             Tab(text: "CALENDAR", icon: Icon(Icons.calendar_today_outlined)),
+            Tab(text: "AI CHAT", icon: Icon(Icons.psychology_outlined)),
             Tab(text: "MARKS", icon: Icon(Icons.analytics_outlined)),
             Tab(text: "PROFILE", icon: Icon(Icons.person_outline)),
           ],
@@ -60,6 +62,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
             children: const [
               HomeTab(),
               CalendarTab(),
+              ChatTab(),
               MarksTab(),
               ProfileTab(),
             ],

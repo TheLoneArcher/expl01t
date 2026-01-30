@@ -15,6 +15,7 @@ import 'package:camp_x/screens/widgets/announcements_view.dart';
 import 'package:camp_x/screens/widgets/instructor_home_view.dart';
 import 'package:camp_x/screens/tabs/syllabus_tab.dart';
 import 'package:camp_x/screens/tabs/profile_tab.dart';
+import 'package:camp_x/screens/tabs/chat_tab.dart';
 
 class InstructorDashboard extends StatefulWidget {
   const InstructorDashboard({super.key});
@@ -32,7 +33,7 @@ class _InstructorDashboardState extends State<InstructorDashboard> with SingleTi
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
   }
 
 
@@ -80,6 +81,7 @@ class _InstructorDashboardState extends State<InstructorDashboard> with SingleTi
           tabs: const [
             Tab(text: "HOME", icon: Icon(Icons.home)),
             Tab(text: "SYLLABUS", icon: Icon(Icons.book)),
+            Tab(text: "AI CHAT", icon: Icon(Icons.psychology_outlined)),
             Tab(text: "STUDENTS", icon: Icon(Icons.people)),
             Tab(text: "CALENDAR", icon: Icon(Icons.calendar_month)),
             Tab(text: "ANNOUNCE", icon: Icon(Icons.campaign)),
@@ -107,6 +109,7 @@ class _InstructorDashboardState extends State<InstructorDashboard> with SingleTi
             children: [
               InstructorHomeView(user: user!),
               const SyllabusTab(),
+              const ChatTab(),
               const StudentsTab(),
               const CalendarTab(),
               AnnouncementsView(
