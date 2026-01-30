@@ -101,6 +101,36 @@ class _NavBar extends StatelessWidget {
                   padding: EdgeInsets.only(top: 10),
                   child: LinearProgressIndicator(),
                 ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                Text("Quick Access", style: GoogleFonts.exo2(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: loading ? null : () {
+                          uidController.text = "23AK1A3601";
+                          passController.text = "23AK1A3601";
+                        },
+                        style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.blueAccent.withOpacity(0.5))),
+                        child: const Text("STUDENT", style: TextStyle(fontSize: 10)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: loading ? null : () {
+                          uidController.text = "INSTR01";
+                          passController.text = "INSTR01";
+                        },
+                        style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.greenAccent.withOpacity(0.5))),
+                        child: const Text("INSTRUCTOR", style: TextStyle(fontSize: 10)),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
             actions: [
