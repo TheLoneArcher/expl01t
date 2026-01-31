@@ -10,25 +10,25 @@ import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
+  // Ensure Flutter is ready
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Try to load .env, but don't crash if it's empty or missing
+  // Try to load DotEnv but don't stop if it fails
   try {
     await dotenv.load(fileName: ".env");
-    print("Dotenv loaded successfully");
+    print("Dotenv loaded");
   } catch (e) {
-    print("Note: .env file is empty or missing. Using compile-time variables.");
+    print("Using compile-time variables instead of .env");
   }
 
-  print("Techno Design Version 2.0 Loaded");
-
-  // 2. Initialize Firebase
+  // Try to load Firebase but don't stop if it fails
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    print("Firebase initialized");
   } catch (e) {
-    print("Firebase initialization failed: $e");
+    print("Firebase error: $e");
   }
 
   runApp(const CampXApp());
