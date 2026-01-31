@@ -25,8 +25,10 @@ class _ChatTabState extends State<ChatTab> {
   final List<Message> _messages = [];
   bool _isLoading = false;
 
-  // Read API key from .env
-  static final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? "";
+  // Read API key from .env or environment variables
+  static final String _apiKey = const String.fromEnvironment('GEMINI_API_KEY').isNotEmpty
+      ? const String.fromEnvironment('GEMINI_API_KEY')
+      : (dotenv.env['GEMINI_API_KEY'] ?? "");
 
   late GenerativeModel _model;
   ChatSession? _chatSession;
@@ -53,7 +55,7 @@ class _ChatTabState extends State<ChatTab> {
     try {
       // Use a known valid Gemini model
       _model = GenerativeModel(
-        model: 'gemini-2.5-flash', // stable model
+        model: 'gemini-1.5-flash', // Corrected stable model name
         apiKey: _apiKey,
         generationConfig: GenerationConfig(
           temperature: 0.7,
