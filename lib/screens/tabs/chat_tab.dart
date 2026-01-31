@@ -25,9 +25,12 @@ class _ChatTabState extends State<ChatTab> {
   final List<Message> _messages = [];
   bool _isLoading = false;
 
-  // Read API key from .env or environment variables
-  static final String _apiKey = const String.fromEnvironment('GEMINI_API_KEY').isNotEmpty
-      ? const String.fromEnvironment('GEMINI_API_KEY')
+  // Read API key from compile-time environment or .env file
+  // For Vercel: Use --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY in build command
+  // For local dev: Uses .env file
+  static const String _envApiKey = String.fromEnvironment('GEMINI_API_KEY');
+  static final String _apiKey = _envApiKey.isNotEmpty 
+      ? _envApiKey 
       : (dotenv.env['GEMINI_API_KEY'] ?? "");
 
   late GenerativeModel _model;
