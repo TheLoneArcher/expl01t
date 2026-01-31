@@ -11,14 +11,28 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
+
+  // 1. Try to load .env, but don't crash if it's empty or missing
+  try {
+    await dotenv.load(fileName: ".env");
+    print("Dotenv loaded successfully");
+  } catch (e) {
+    print("Note: .env file is empty or missing. Using compile-time variables.");
+  }
+
   print("Techno Design Version 2.0 Loaded");
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  // 2. Initialize Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    print("Firebase initialization failed: $e");
+  }
+
   runApp(const CampXApp());
 }
-
 
 class CampXApp extends StatelessWidget {
   const CampXApp({super.key});
