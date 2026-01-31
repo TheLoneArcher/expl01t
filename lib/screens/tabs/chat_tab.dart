@@ -58,7 +58,7 @@ class _ChatTabState extends State<ChatTab> {
     try {
       // Use a known valid Gemini model
       _model = GenerativeModel(
-        model: 'gemini-1.5-flash', // Corrected stable model name
+        model: 'gemini-2.5-flash', // Corrected stable model name
         apiKey: _apiKey,
         generationConfig: GenerationConfig(
           temperature: 0.7,
