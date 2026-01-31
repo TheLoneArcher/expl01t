@@ -83,60 +83,99 @@ class _NavBar extends StatelessWidget {
         builder: (context, loading, child) {
           return AlertDialog(
             backgroundColor: Theme.of(context).cardTheme.color,
-            title: Text("Student Login", style: GoogleFonts.orbitron(fontWeight: FontWeight.bold)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
               children: [
-                TextField(
-                  controller: uidController,
-                  decoration: const InputDecoration(labelText: "Student ID (e.g. 23AK1A3601)"),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: passController,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: "Password"),
-                ),
-                if (loading) const Padding(
-                  padding: EdgeInsets.only(top: 10),
-                  child: LinearProgressIndicator(),
-                ),
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 8),
-                Text("Quick Access", style: GoogleFonts.exo2(fontSize: 12, color: Colors.grey)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: loading ? null : () {
-                          uidController.text = "23AK1A3601";
-                          passController.text = "23AK1A3601";
-                        },
-                        style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.blueAccent.withOpacity(0.5))),
-                        child: const Text("STUDENT", style: TextStyle(fontSize: 10)),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: loading ? null : () {
-                          uidController.text = "INSTR01";
-                          passController.text = "INSTR01";
-                        },
-                        style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.greenAccent.withOpacity(0.5))),
-                        child: const Text("INSTRUCTOR", style: TextStyle(fontSize: 10)),
-                      ),
-                    ),
-                  ],
-                ),
+                Icon(Icons.login_rounded, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 12),
+                Text("Student Login", style: GoogleFonts.orbitron(fontWeight: FontWeight.bold)),
               ],
+            ),
+            content: SizedBox(
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: uidController,
+                    decoration: InputDecoration(
+                      labelText: "Student ID",
+                      hintText: "e.g. 23AK1A3601",
+                      prefixIcon: Icon(Icons.person_outline, color: Theme.of(context).primaryColor),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: passController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: "Password",
+                      prefixIcon: Icon(Icons.lock_outline, color: Theme.of(context).primaryColor),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+                    ),
+                  ),
+                  if (loading) const Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: LinearProgressIndicator(),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    "Quick Access",
+                    style: GoogleFonts.exo2(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).primaryColor.withOpacity(0.8),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _QuickAccessCard(
+                          label: "STUDENT",
+                          icon: Icons.school_outlined,
+                          color: Colors.blueAccent,
+                          onTap: loading ? null : () {
+                            uidController.text = "23AK1A3601";
+                            passController.text = "23AK1A3601";
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _QuickAccessCard(
+                          label: "INSTRUCTOR",
+                          icon: Icons.person_outline,
+                          color: Colors.greenAccent,
+                          onTap: loading ? null : () {
+                            uidController.text = "INSTR01";
+                            passController.text = "INSTR01";
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("CANCEL"),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: Text("CANCEL", style: GoogleFonts.exo2(fontWeight: FontWeight.w600)),
               ),
               ElevatedButton(
                 onPressed: loading ? null : () async {
@@ -164,7 +203,13 @@ class _NavBar extends StatelessWidget {
                   }
 
                 },
-                child: const Text("LOGIN"),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text("LOGIN", style: GoogleFonts.exo2(fontWeight: FontWeight.bold)),
               ),
             ],
           );
@@ -241,6 +286,52 @@ class _NavBar extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Quick Access Card Widget for Login Dialog
+class _QuickAccessCard extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _QuickAccessCard({
+    required this.label,
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.exo2(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: color,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
