@@ -73,3 +73,7 @@ app.*.map.json
 # Exceptions to above rules
 !android/app/src/main/res/drawable
 !android/app/src/main/res/mipmap
+
+# Database
+main_seed.dart
+seeding_service.dart
