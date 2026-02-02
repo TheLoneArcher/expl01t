@@ -2,170 +2,209 @@
   "students": [
     {
       "uid": "23AK1A3601",
-      "name": "Student 1",
-      "email": "23AK1A3601@campx.edu",
+      "name": "Arjun Sharma",
+      "email": "arjun.s@campx.edu",
       "password": "23AK1A3601",
       "role": "student",
-      "classId": "BTECH_3"
+      "classId": "BTECH_3",
+      "profile": "topper"
     },
     {
       "uid": "23AK1A3602",
-      "name": "Student 2",
-      "email": "23AK1A3602@campx.edu",
+      "name": "Priya Patel",
+      "email": "priya.p@campx.edu",
       "password": "23AK1A3602",
       "role": "student",
-      "classId": "BTECH_3"
+      "classId": "BTECH_3",
+      "profile": "average"
     },
     {
       "uid": "23AK1A3603",
-      "name": "Student 3",
-      "email": "23AK1A3603@campx.edu",
+      "name": "Rohan Das",
+      "email": "rohan.d@campx.edu",
       "password": "23AK1A3603",
       "role": "student",
-      "classId": "BTECH_3"
+      "classId": "BTECH_3",
+      "profile": "athlete"
     },
     {
       "uid": "23AK1A3604",
-      "name": "Student 4",
-      "email": "23AK1A3604@campx.edu",
+      "name": "Sanya Malhotra",
+      "email": "sanya.m@campx.edu",
       "password": "23AK1A3604",
       "role": "student",
-      "classId": "BTECH_3"
+      "classId": "BTECH_3",
+      "profile": "struggler"
     },
     {
       "uid": "23AK1A3605",
-      "name": "Student 5",
-      "email": "23AK1A3605@campx.edu",
+      "name": "Vikram Singh",
+      "email": "vikram.s@campx.edu",
       "password": "23AK1A3605",
       "role": "student",
-      "classId": "BTECH_3"
+      "classId": "BTECH_3",
+      "profile": "topper"
+    },
+    {
+      "uid": "23AK1A3606",
+      "name": "Ananya Reddy",
+      "email": "ananya.r@campx.edu",
+      "password": "23AK1A3606",
+      "role": "student",
+      "classId": "BTECH_3",
+      "profile": "average"
+    },
+    {
+      "uid": "23AK1A3607",
+      "name": "Ishaan Verma",
+      "email": "ishaan.v@campx.edu",
+      "password": "23AK1A3607",
+      "role": "student",
+      "classId": "BTECH_3",
+      "profile": "irregular"
+    },
+    {
+      "uid": "23AK1A3608",
+      "name": "Meera Iyer",
+      "email": "meera.i@campx.edu",
+      "password": "23AK1A3608",
+      "role": "student",
+      "classId": "BTECH_3",
+      "profile": "average"
+    },
+    {
+      "uid": "23AK1A3609",
+      "name": "Kabir Kapoor",
+      "email": "kabir.k@campx.edu",
+      "password": "23AK1A3609",
+      "role": "student",
+      "classId": "BTECH_3",
+      "profile": "athlete"
+    },
+    {
+      "uid": "23AK1A3610",
+      "name": "Zoya Khan",
+      "email": "zoya.k@campx.edu",
+      "password": "23AK1A3610",
+      "role": "student",
+      "classId": "BTECH_3",
+      "profile": "topper"
     }
   ],
   "instructors": [
     {
       "uid": "INSTR01",
-      "name": "Instructor 1",
-      "email": "INSTR01@campx.edu",
+      "name": "Dr. Sarah Johnson",
+      "email": "sarah.j@campx.edu",
       "password": "INSTR01",
       "role": "instructor"
     },
     {
       "uid": "INSTR02",
-      "name": "Instructor 2",
-      "email": "INSTR02@campx.edu",
+      "name": "Prof. Michael Chen",
+      "email": "michael.c@campx.edu",
       "password": "INSTR02",
+      "role": "instructor"
+    },
+    {
+      "uid": "INSTR03",
+      "name": "Mrs. Elena Rodriguez",
+      "email": "elena.r@campx.edu",
+      "password": "INSTR03",
       "role": "instructor"
     }
   ],
   "subjects": [
     {
-      "name": "Machine Learning",
-      "code": "ML",
+      "name": "Advanced Mathematics",
+      "code": "MATH",
       "topics": [
         {
-          "name": "Supervised Learning",
+          "name": "Calculus",
           "status": "covered"
         },
         {
-          "name": "Regression Analysis",
+          "name": "Linear Algebra",
           "status": "covered"
         },
         {
-          "name": "Classification Models",
+          "name": "Probability",
           "status": "pending"
         },
         {
-          "name": "Neural Networks",
+          "name": "Statistics",
           "status": "pending"
         }
       ]
     },
     {
-      "name": "English",
-      "code": "ENG",
+      "name": "Physics",
+      "code": "PHYS",
       "topics": [
         {
-          "name": "Technical Communication",
+          "name": "Quantum Mechanics",
           "status": "covered"
         },
         {
-          "name": "Professional Ethics",
-          "status": "covered"
+          "name": "Electromagnetism",
+          "status": "pending"
         },
         {
-          "name": "Grammar Review",
+          "name": "Thermodynamics",
           "status": "pending"
         }
       ]
     },
     {
-      "name": "Blockchain",
-      "code": "BLK",
+      "name": "Computer Science",
+      "code": "CS",
       "topics": [
         {
-          "name": "Distributed Ledgers",
+          "name": "Data Structures",
           "status": "covered"
         },
         {
-          "name": "Smart Contracts",
-          "status": "pending"
+          "name": "Algorithms",
+          "status": "covered"
         },
         {
-          "name": "Hyperledger Fabric",
+          "name": "App Development",
           "status": "pending"
         }
       ]
     },
     {
-      "name": "Cyber Security",
-      "code": "CYB",
+      "name": "Literature & Rhetoric",
+      "code": "LIT",
       "topics": [
         {
-          "name": "Ethical Hacking",
+          "name": "Classical Poetry",
           "status": "covered"
         },
         {
-          "name": "Network Vulnerability",
+          "name": "Modern Fiction",
           "status": "pending"
         },
         {
-          "name": "Digital Forensics",
+          "name": "Creative Writing",
           "status": "pending"
         }
       ]
     },
     {
-      "name": "Databases",
-      "code": "DB",
+      "name": "World History",
+      "code": "HIST",
       "topics": [
         {
-          "name": "SQL Fundamental",
+          "name": "Industrial Revolution",
           "status": "covered"
         },
         {
-          "name": "NoSQL Architecture",
+          "name": "The Cold War",
           "status": "pending"
         },
         {
-          "name": "Firebase Optimization",
-          "status": "pending"
-        }
-      ]
-    },
-    {
-      "name": "Python",
-      "code": "PY",
-      "topics": [
-        {
-          "name": "Core Syntax",
-          "status": "covered"
-        },
-        {
-          "name": "Flask Development",
-          "status": "pending"
-        },
-        {
-          "name": "Automation Scripts",
+          "name": "Renaissance",
           "status": "pending"
         }
       ]
@@ -173,106 +212,106 @@
   ],
   "meetings": [
     {
-      "title": "Faculty Strategy Meeting",
-      "time": "2026-02-01T10:00:00Z",
-      "type": "Online (Zoom)",
-      "link": "https://zoom.us/j/campx_999"
-    },
-    {
-      "title": "Semester Planning: B.Tech",
-      "time": "2026-02-02T14:00:00Z",
-      "type": "Offline (Conf. Room 4B)",
+      "title": "Student Council Weekly",
+      "time": "2026-02-01T16:00:00Z",
+      "type": "Offline (Room 202)",
       "link": null
     },
     {
-      "title": "Student Grievance Cell",
-      "time": "2026-02-03T11:00:00Z",
-      "type": "Online (Meet)",
-      "link": "https://meet.google.com/xyz-123"
+      "title": "Drama Club Rehearsal",
+      "time": "2026-02-02T15:30:00Z",
+      "type": "Offline (Theater)",
+      "link": null
     },
     {
-      "title": "Emergency Staff Meeting",
-      "time": "2026-02-01T09:00:00Z",
-      "type": "Online (Zoom)",
-      "link": "https://zoom.us/j/emergency"
+      "title": "Debate Team Practice",
+      "time": "2026-02-03T16:00:00Z",
+      "type": "Online (Meet)",
+      "link": "https://meet.google.com/deb-ate-123"
+    },
+    {
+      "title": "Football Team Strategy",
+      "time": "2026-02-01T17:00:00Z",
+      "type": "Offline (Locker Room)",
+      "link": null
     }
   ],
   "timetable": {
     "Monday": {
-      "p1": "Machine Learning",
-      "p2": "English",
-      "p3": "Blockchain",
-      "p4": "Cyber Security",
-      "p5": "Databases"
+      "p1": "Advanced Mathematics",
+      "p2": "Physics",
+      "p3": "Computer Science",
+      "p4": "Literature & Rhetoric",
+      "p5": "World History"
     },
     "Tuesday": {
-      "p1": "Python",
-      "p2": "Machine Learning",
-      "p3": "English",
-      "p4": "Blockchain",
-      "p5": "Cyber Security"
+      "p1": "World History",
+      "p2": "Advanced Mathematics",
+      "p3": "Physics",
+      "p4": "Computer Science",
+      "p5": "Literature & Rhetoric"
     },
     "Wednesday": {
-      "p1": "Databases",
-      "p2": "Python",
-      "p3": "Machine Learning",
-      "p4": "English",
-      "p5": "Blockchain"
+      "p1": "Literature & Rhetoric",
+      "p2": "World History",
+      "p3": "Advanced Mathematics",
+      "p4": "Physics",
+      "p5": "Computer Science"
     },
     "Thursday": {
-      "p1": "Cyber Security",
-      "p2": "Databases",
-      "p3": "Python",
-      "p4": "Machine Learning",
-      "p5": "English"
+      "p1": "Computer Science",
+      "p2": "Literature & Rhetoric",
+      "p3": "World History",
+      "p4": "Advanced Mathematics",
+      "p5": "Physics"
     },
     "Friday": {
-      "p1": "Blockchain",
-      "p2": "Cyber Security",
-      "p3": "Databases",
-      "p4": "Python",
-      "p5": "Machine Learning"
+      "p1": "Physics",
+      "p2": "Computer Science",
+      "p3": "Literature & Rhetoric",
+      "p4": "World History",
+      "p5": "Advanced Mathematics"
     }
   },
   "exams": [
     {
-      "name": "Quarterly 1",
+      "name": "Unit Test 1",
       "date": "2025-08-15T09:00:00Z",
-      "total": 30,
+      "total": 50,
       "isCompleted": true
     },
     {
-      "name": "Quarterly 2",
+      "name": "Unit Test 2",
       "date": "2025-10-15T09:00:00Z",
-      "total": 30,
+      "total": 50,
       "isCompleted": true
     },
     {
-      "name": "Half Yearly",
+      "name": "Mid-Term Exams",
       "date": "2025-12-10T09:00:00Z",
       "total": 100,
       "isCompleted": true
     },
     {
-      "name": "Quarterly 3",
+      "name": "Unit Test 3",
       "date": "2026-01-20T09:00:00Z",
-      "total": 30,
+      "total": 50,
       "isCompleted": true
     },
     {
-      "name": "Quarterly 4",
+      "name": "Unit Test 4",
       "date": "2026-02-20T09:00:00Z",
-      "total": 30,
+      "total": 50,
       "isCompleted": false
     },
     {
-      "name": "Prefinal",
+      "name": "Pre-Board Exams",
       "date": "2026-04-10T09:00:00Z",
       "total": 100,
       "isCompleted": false
     },
     {
-      "name": "Final",
+      "name": "Board Final Exams",
       "date": "2026-05-05T09:00:00Z",
       "total": 100,
       "isCompleted": false

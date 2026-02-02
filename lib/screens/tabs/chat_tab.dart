@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:intl/intl.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-class Message {
-  final String role; // 'user', 'model', 'system'
-  final String text;
-  final DateTime time;
-
-  Message({required this.role, required this.text, required this.time});
-}
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import dotenv
+import 'package:provider/provider.dart';
+import 'package:camp_x/utils/user_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatTab extends StatefulWidget {
   const ChatTab({super.key});
@@ -20,112 +14,117 @@ class ChatTab extends StatefulWidget {
 }
 
 class _ChatTabState extends State<ChatTab> {
+  // Variables
+  final List<Content> _history = [];
+  bool _isLoading = false;     // Loading indicator
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<Message> _messages = [];
-  bool _isLoading = false;
-
-  // Read API key from compile-time environment or .env file
-  // For Vercel: Use --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY in build command
-  // For local dev: Uses .env file
-  static const String _envApiKey = String.fromEnvironment('GEMINI_API_KEY');
-  static final String _apiKey = _envApiKey.isNotEmpty 
-      ? _envApiKey 
-      : (dotenv.env['GEMINI_API_KEY'] ?? "");
-
-  late GenerativeModel _model;
-  ChatSession? _chatSession;
+  GenerativeModel? _model;
+  
+  // To show in UI
+  final List<Map<String, String>> _displayMessages = [];
 
   @override
   void initState() {
     super.initState();
-    _initializeChat();
+    _initModel();
   }
 
-  Future<void> _initializeChat() async {
-    if (_apiKey.isEmpty || _apiKey.startsWith("REPLACE")) {
+  Future<void> _initModel() async {
+    // secure API key loading from .env at runtime
+    final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    
+    // Also check String.fromEnvironment as backup for CI/CD/Release builds using dart-define
+    final fallbackKey = const String.fromEnvironment('GEMINI_API_KEY');
+    final apiKey = envKey.isNotEmpty ? envKey : fallbackKey;
+
+    if (apiKey.isNotEmpty) {
       setState(() {
-        _messages.add(Message(
-          role: 'system',
-          text:
-              '⚠️ Gemini API Key not set. Please configure your API key to enable AI features.',
-          time: DateTime.now(),
-        ));
+        _model = GenerativeModel(model: 'gemini-2.5-flash', apiKey: apiKey);
       });
-      return;
     }
+  }
 
+  // Async fetch context
+  Future<String> _buildStudentContext(Map<String, dynamic> user) async {
     try {
-      // Use a known valid Gemini model
-      _model = GenerativeModel(
-        model: 'gemini-2.5-flash', // Corrected stable model name
-        apiKey: _apiKey,
-        generationConfig: GenerationConfig(
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        ),
-        systemInstruction: Content.system(
-          'You are CampX AI, a helpful campus assistant. Keep responses concise and professional.',
-        ),
-      );
+      final uid = user['uid'];
+      final marksSnap = await FirebaseFirestore.instance.collection('users').doc(uid).collection('marks').get();
+      final attSnap = await FirebaseFirestore.instance.collection('users').doc(uid).collection('attendance').limit(10).get(); // Last 10 days
+      
+      StringBuffer contextBuffer = StringBuffer();
+      contextBuffer.writeln("You are CampX AI, a helpful assistant for a student named ${user['name']}.");
+      contextBuffer.writeln("Class: ${user['classId']}. Role: ${user['role']}.");
+      
+      if (marksSnap.docs.isNotEmpty) {
+        contextBuffer.writeln("Recent Exam Marks:");
+        for (var doc in marksSnap.docs) {
+          contextBuffer.writeln("- Exam ${doc.id}: ${doc.data()}");
+        }
+      }
 
-      _chatSession = await _model.startChat();
-
-      setState(() {
-        _messages.add(Message(
-          role: 'model',
-          text:
-              'System Online. Hello! I am CampX AI. How can I assist your academic journey today?',
-          time: DateTime.now(),
-        ));
-      });
+      if (attSnap.docs.isNotEmpty) {
+        contextBuffer.writeln("Recent Attendance (Last 10 records):");
+        for (var doc in attSnap.docs) {
+          contextBuffer.writeln("- Date ${doc.id}: ${doc.data()}");
+        }
+      }
+      
+      return contextBuffer.toString();
     } catch (e) {
-      setState(() {
-        _messages.add(Message(
-          role: 'system',
-          text: 'Error initializing chat: ${e.toString()}',
-          time: DateTime.now(),
-        ));
-      });
+      return "Context fetch failed. Proceeding with general assistance."; 
     }
   }
 
   Future<void> _sendMessage() async {
+    if (_model == null) return;
     final text = _controller.text.trim();
-    if (text.isEmpty || _isLoading || _chatSession == null) return;
+    if (text.isEmpty) return;
+
+    final userProvider = context.read<UserProvider>();
+    final user = userProvider.user;
 
     setState(() {
-      _messages.add(Message(role: 'user', text: text, time: DateTime.now()));
+      _displayMessages.add({'role': 'user', 'text': text});
       _isLoading = true;
       _controller.clear();
     });
+    
     _scrollToBottom();
 
     try {
-      final response = await _chatSession!.sendMessage(Content.text(text));
+      final chat = _model!.startChat(history: _history);
+      
+      // Inject context if it's the first message or history is short
+      String messageToSend = text;
+      if (_history.isEmpty && user != null) {
+         final contextStr = await _buildStudentContext(user);
+         messageToSend = "System Context: $contextStr\n\nUser Question: $text";
+      }
+
+      final content = Content.text(messageToSend);
+      final response = await chat.sendMessage(content);
+      
+      final responseText = response.text ?? "I'm sorry, I didn't get that.";
+
       setState(() {
-        _messages.add(Message(
-          role: 'model',
-          text: response.text ?? "I'm sorry, I couldn't process that.",
-          time: DateTime.now(),
-        ));
+        _history.add(content);
+        if (response.text != null) {
+           _history.add(Content.model([TextPart(response.text!)]));
+        }
+        _displayMessages.add({'role': 'model', 'text': responseText});
         _isLoading = false;
       });
+      _scrollToBottom();
+      
     } catch (e) {
       setState(() {
-        _messages.add(Message(
-          role: 'model',
-          text: 'System Error: ${e.toString()}',
-          time: DateTime.now(),
-        ));
+        _displayMessages.add({'role': 'model', 'text': "Error: $e"});
         _isLoading = false;
       });
     }
-    _scrollToBottom();
   }
-
+  
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -138,173 +137,132 @@ class _ChatTabState extends State<ChatTab> {
     });
   }
 
+  // Dispose controllers
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // Build method
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      children: [
-        // Header
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.cardColor.withOpacity(0.5),
-            border: Border(bottom: BorderSide(color: theme.primaryColor.withOpacity(0.2))),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: theme.primaryColor.withOpacity(0.1),
-                child: Icon(Icons.psychology, color: theme.primaryColor),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      body: _model == null 
+        ? Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Icon(Icons.vpn_key_outlined, size: 64, color: Theme.of(context).primaryColor),
+                  const SizedBox(height: 24),
                   Text(
-                    "CAMPX INTELLIGENCE",
-                    style: GoogleFonts.orbitron(
-                        fontSize: 14, fontWeight: FontWeight.bold, color: theme.primaryColor),
+                    "Gemini API Key Required",
+                    style: GoogleFonts.orbitron(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration:
-                            const BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 6),
-                      Text("SYSTEM ACTIVE v1.1",
-                          style: GoogleFonts.shareTechMono(fontSize: 10, color: Colors.greenAccent)),
-                    ],
+                  const SizedBox(height: 16),
+                  const Text(
+                    "The API key was not found in the environment.\nPlease enter it manually to continue.",
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: "Enter API Key",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: const Icon(Icons.key),
+                    ),
+                    onSubmitted: (value) {
+                      if (value.isNotEmpty) {
+                        final key = value.trim();
+                        debugPrint("Manual Key Entered: ${key.substring(0, 4)}..."); // Debug log
+                        setState(() {
+                          _model = GenerativeModel(model: 'gemini-2.5-flash', apiKey: key);
+                        });
+                      }
+                    },
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-
-        // Messages
-        Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(20),
-            itemCount: _messages.length,
-            itemBuilder: (context, index) {
-              final msg = _messages[index];
-              final isUser = msg.role == 'user';
-              final isSystem = msg.role == 'system';
-
-              if (isSystem) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
+            ),
+          )
+        : Column(
+        children: [
+          Expanded(
+            child: _displayMessages.isEmpty 
+             ? Center(
+                 child: Column(
+                   mainAxisAlignment: MainAxisAlignment.center,
+                   children: [
+                     Icon(Icons.auto_awesome, size: 60, color: Theme.of(context).primaryColor.withValues(alpha: 0.5)),
+                     const SizedBox(height: 16),
+                     const Text("Ask me anything about your academics!"),
+                   ],
+                 )
+               )
+             : ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: _displayMessages.length,
+              itemBuilder: (context, index) {
+                final msg = _displayMessages[index];
+                final isUser = msg['role'] == 'user';
+                return Align(
+                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                    decoration: BoxDecoration(
+                      color: isUser 
+                          ? Theme.of(context).primaryColor.withValues(alpha: 0.2) 
+                          : Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(12),
+                        topRight: const Radius.circular(12),
+                        bottomLeft: isUser ? const Radius.circular(12) : Radius.zero,
+                        bottomRight: isUser ? Radius.zero : const Radius.circular(12),
+                      ),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    ),
+                    child: Text(msg['text']!),
                   ),
-                  child: Text(msg.text, style: const TextStyle(color: Colors.amber, fontSize: 13)),
                 );
-              }
-
-              return Align(
-                alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  constraints:
-                      BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isUser ? theme.primaryColor : theme.cardColor,
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(16),
-                      topRight: const Radius.circular(16),
-                      bottomLeft: Radius.circular(isUser ? 16 : 0),
-                      bottomRight: Radius.circular(isUser ? 0 : 16),
+              },
+            ),
+          ),
+          if (_isLoading) const LinearProgressIndicator(),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    onSubmitted: (_) => _sendMessage(),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+                      hintText: "Type a message...",
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      filled: true,
+                      fillColor: Theme.of(context).cardColor,
                     ),
-                    border: isUser ? null : Border.all(color: theme.primaryColor.withOpacity(0.2)),
-                    boxShadow: [
-                      if (isUser)
-                        BoxShadow(
-                            color: theme.primaryColor.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2))
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(msg.text,
-                          style: TextStyle(
-                              color: isUser ? Colors.white : theme.textTheme.bodyMedium?.color)),
-                      const SizedBox(height: 4),
-                      Text(DateFormat('HH:mm').format(msg.time),
-                          style: TextStyle(
-                              fontSize: 10, color: isUser ? Colors.white70 : Colors.grey)),
-                    ],
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-
-        if (_isLoading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: LinearProgressIndicator(minHeight: 2, backgroundColor: Colors.transparent),
-          ),
-
-        // Input
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.cardColor.withOpacity(0.5),
-            border: Border(top: BorderSide(color: theme.primaryColor.withOpacity(0.2))),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  onSubmitted: (_) => _sendMessage(),
-                  decoration: InputDecoration(
-                    hintText: "Type your query...",
-                    hintStyle: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5)),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                    fillColor: theme.scaffoldBackgroundColor,
-                    filled: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  ),
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  icon: const Icon(Icons.send),
+                  onPressed: _sendMessage,
+                  style: IconButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.black),
                 ),
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: _sendMessage,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.primaryColor,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                          color: theme.primaryColor.withOpacity(0.4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4))
-                    ],
-                  ),
-                  child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

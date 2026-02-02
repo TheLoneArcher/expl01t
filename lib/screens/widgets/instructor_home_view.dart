@@ -25,8 +25,8 @@ class InstructorHomeView extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  theme.primaryColor.withOpacity(0.8),
-                  theme.colorScheme.secondary.withOpacity(0.8),
+                  theme.primaryColor.withValues(alpha: 0.8),
+                  theme.colorScheme.secondary.withValues(alpha: 0.8),
                 ],
               ),
               borderRadius: BorderRadius.circular(20),

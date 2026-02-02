@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // Add this import
 import 'package:camp_x/utils/user_provider.dart'; // Add this import
 import 'package:camp_x/screens/landing_page.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:io';
+// import 'dart:io'; // Removed unused import
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -30,12 +31,12 @@ class ProfileTab extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 70, // Bigger profile pic
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                    backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                     child: SvgPicture.asset(
-                      'assets/images/default_profile.svg',
+                      'images/default_profile.svg',
                       width: 80, 
                       height: 80,
-                      color: Theme.of(context).primaryColor,
+                      colorFilter: ColorFilter.mode(Theme.of(context).primaryColor, BlendMode.srcIn),
                     ),
                   ),
                   Container(
@@ -61,33 +62,33 @@ class ProfileTab extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               
-              // Responsive Items Grid
-              if (isWide)
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  childAspectRatio: 4.5, // Even more compact
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 12,
+                // Responsive Items Layout
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
                   children: [
-                    _ProfileItem(icon: Icons.email, label: "Email", value: user['email'] ?? 'N/A'),
-                    _ProfileItem(icon: Icons.school, label: "Class", value: user['classId'] ?? 'N/A'),
-                    _ProfileItem(icon: Icons.shield, label: "Role", value: (user['role'] as String).toUpperCase()),
-                    _ProfileItem(icon: Icons.calendar_today, label: "Member Since", value: "April 2025"),
-                  ],
-                )
-              else
-                Column(
-                  children: [
-                    _ProfileItem(icon: Icons.email, label: "Email", value: user['email'] ?? 'N/A'),
-                    _ProfileItem(icon: Icons.school, label: "Class", value: user['classId'] ?? 'N/A'),
-                    _ProfileItem(icon: Icons.shield, label: "Role", value: (user['role'] as String).toUpperCase()),
-                    _ProfileItem(icon: Icons.calendar_today, label: "Member Since", value: "April 2025"),
+                    SizedBox(
+                      width: isWide ? 300 : double.infinity,
+                      child: _ProfileItem(icon: Icons.email, label: "Email", value: user['email'] ?? 'N/A'),
+                    ),
+                    SizedBox(
+                      width: isWide ? 300 : double.infinity,
+                      child: _ProfileItem(icon: Icons.school, label: "Class", value: user['classId'] ?? 'N/A'),
+                    ),
+                    SizedBox(
+                      width: isWide ? 300 : double.infinity,
+                      child: _ProfileItem(icon: Icons.shield, label: "Role", value: (user['role'] as String).toUpperCase()),
+                    ),
+                    SizedBox(
+                      width: isWide ? 300 : double.infinity,
+                      child: _ProfileItem(icon: Icons.calendar_today, label: "Member Since", value: "April 2025"),
+                    ),
                   ],
                 ),
 
-              const SizedBox(height: 30), // Reduced from 50
+              const SizedBox(height: 30),
+              // Marks moved back to main tab as per request
               SizedBox(
                 width: isWide ? 300 : double.infinity,
                 height: 50, // Slightly shorter
@@ -102,7 +103,7 @@ class ProfileTab extends StatelessWidget {
                   icon: const Icon(Icons.logout, size: 20),
                   label: const Text("SECURE LOGOUT", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 13)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent.withOpacity(0.9),
+                    backgroundColor: Colors.redAccent.withValues(alpha: 0.9),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Sharper corners for techno look
@@ -131,7 +132,7 @@ class _ProfileItem extends StatelessWidget {
       elevation: 0,
        shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+        side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
       ),
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
@@ -141,7 +142,7 @@ class _ProfileItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),

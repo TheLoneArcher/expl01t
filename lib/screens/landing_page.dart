@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:camp_x/utils/theme_provider.dart';
 import 'package:camp_x/utils/user_provider.dart';
-import 'package:camp_x/services/seeding_service.dart';
 import 'package:camp_x/screens/dashboard.dart';
 import 'package:camp_x/screens/instructor_dashboard.dart';
 
@@ -16,7 +15,6 @@ class LandingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 800;
 
@@ -38,9 +36,9 @@ class LandingPage extends StatelessWidget {
                           Expanded(flex: 5, child: _HeroSection(isDesktop: true)),
                           Expanded(
                             flex: 4, 
-                            child: Container(
+                            child: const SizedBox(
                               height: double.infinity, // Fill available height
-                              child: const _TechnoVisualizer(),
+                              child: _TechnoVisualizer(),
                             ),
                           ),
                         ],
@@ -48,7 +46,7 @@ class LandingPage extends StatelessWidget {
                     : SingleChildScrollView(
                         child: Column(
                           children: [
-                            const SizedBox(height: 40),
+                            const SizedBox(height: 16),
                             const SizedBox(height: 300, child: _TechnoVisualizer()),
                             _HeroSection(isDesktop: false),
                           ],
@@ -107,7 +105,7 @@ class _NavBar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+                      fillColor: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -121,7 +119,7 @@ class _NavBar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+                      fillColor: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
                     ),
                   ),
                   if (loading) const Padding(
@@ -134,7 +132,7 @@ class _NavBar extends StatelessWidget {
                     style: GoogleFonts.exo2(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).primaryColor.withOpacity(0.8),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.8),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -180,28 +178,42 @@ class _NavBar extends StatelessWidget {
               ElevatedButton(
                 onPressed: loading ? null : () async {
                   isLoading.value = true;
-                  final success = await context.read<UserProvider>().login(uidController.text.trim(), passController.text.trim());
-                  isLoading.value = false;
-                  
-                  if (success) {
-                    Navigator.pop(context); // Close dialog
-                    final user = context.read<UserProvider>().user;
+                  try {
+                    final success = await context.read<UserProvider>().login(uidController.text.trim(), passController.text.trim());
+                    if (!context.mounted) return;
                     
-                    if (user != null && user['role'] == 'instructor') {
-                       Navigator.pushReplacement(
-                        context, 
-                        MaterialPageRoute(builder: (_) => const InstructorDashboard())
-                      );
+                    if (success) {
+                      Navigator.pop(context); // Close dialog
+                      if (!context.mounted) return;
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Login Success!")));
+                      
+                      final user = context.read<UserProvider>().user;
+                      if (user != null && user['role'] == 'instructor') {
+                        if (!context.mounted) return;
+                        Navigator.pushReplacement(
+                          context, 
+                          MaterialPageRoute(builder: (_) => const InstructorDashboard())
+                        );
+                      } else {
+                        if (!context.mounted) return;
+                        Navigator.pushReplacement(
+                          context, 
+                          MaterialPageRoute(builder: (_) => const DashboardScreen())
+                        );
+                      }
                     } else {
-                      Navigator.pushReplacement(
-                        context, 
-                        MaterialPageRoute(builder: (_) => const DashboardScreen())
-                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid Credentials")));
+                      }
                     }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid Credentials")));
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+                    }
+                  } finally {
+                    isLoading.value = false;
                   }
-
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
@@ -223,31 +235,24 @@ class _NavBar extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 20, vertical: 20),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
-        border: Border(bottom: BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.2))),
+        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.7),
+        border: Border(bottom: BorderSide(color: Theme.of(context).primaryColor.withValues(alpha: 0.2))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
-            child: GestureDetector(
-              onLongPress: () async {
-                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Seeding Database...")));
-                 await SeedingService().seedDatabase();
-                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Database Seeded!")));
-              },
-              child: ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  colors: [Theme.of(context).primaryColor, Theme.of(context).colorScheme.secondary],
-                ).createShader(bounds),
-                child: Text(
-                  'CampX',
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.orbitron(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+            child: ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [Theme.of(context).primaryColor, Theme.of(context).colorScheme.secondary],
+              ).createShader(bounds),
+              child: Text(
+                'CampX',
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.orbitron(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -268,12 +273,12 @@ class _NavBar extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () => _showLoginDialog(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                    backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                     side: BorderSide(color: Theme.of(context).primaryColor),
                     shadowColor: Theme.of(context).primaryColor,
                     elevation: 10,
                   ),
-                  child: Text('LOGIN', style: TextStyle(color: Theme.of(context).colorScheme.onBackground)),
+                  child: Text('LOGIN', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                 ),
               ] else ...[
                  const SizedBox(width: 8),
@@ -313,9 +318,9 @@ class _QuickAccessCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
         ),
         child: Column(
           children: [
@@ -354,9 +359,9 @@ class _HeroSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.1),
+              color: theme.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: theme.primaryColor.withOpacity(0.5)),
+              border: Border.all(color: theme.primaryColor.withValues(alpha: 0.5)),
             ),
             child: Text(
               'SYSTEM ONLINE',
@@ -375,9 +380,9 @@ class _HeroSection extends StatelessWidget {
               fontSize: isDesktop ? 60 : 36, // Reduced font size to prevent overflow
               fontWeight: FontWeight.w900,
               height: 1.0,
-              color: theme.colorScheme.onBackground,
+              color: theme.colorScheme.onSurface,
               shadows: [
-                Shadow(color: theme.primaryColor.withOpacity(0.6), blurRadius: 20),
+                Shadow(color: theme.primaryColor.withValues(alpha: 0.6), blurRadius: 20),
               ],
             ),
 
@@ -388,7 +393,7 @@ class _HeroSection extends StatelessWidget {
             textAlign: isDesktop ? TextAlign.start : TextAlign.center,
             style: GoogleFonts.exo2(
               fontSize: 18,
-              color: theme.colorScheme.onBackground.withOpacity(0.8),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
               height: 1.6,
             ),
           ),
@@ -423,7 +428,7 @@ class _FeatureChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+        border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -433,7 +438,7 @@ class _FeatureChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: theme.colorScheme.onBackground,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -528,7 +533,7 @@ class _TechCirclePainter extends CustomPainter {
 
       double rotation = animationValue * 2 * math.pi * (i % 2 == 0 ? 1 : -1) + (i * math.pi / 4);
       
-      paint.color = i % 2 == 0 ? primary.withOpacity(0.6) : secondary.withOpacity(0.6);
+      paint.color = i % 2 == 0 ? primary.withValues(alpha: 0.6) : secondary.withValues(alpha: 0.6);
       
       canvas.save();
       canvas.translate(center.dx, center.dy);
@@ -565,7 +570,7 @@ class _TechnoBackground extends StatelessWidget {
       ),
       child: CustomPaint(
         painter: _GridPainter(
-          color: Theme.of(context).primaryColor.withOpacity(0.1), // Increased opacity
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.1), // Increased opacity
           isDarkMode: Theme.of(context).brightness == Brightness.dark,
         ),
         child: Container(),
@@ -582,7 +587,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color..strokeWidth = 1;
-    final dotPaint = Paint()..color = color.withOpacity(isDarkMode ? 0.3 : 0.5)..style = PaintingStyle.fill;
+    final dotPaint = Paint()..color = color.withValues(alpha: isDarkMode ? 0.3 : 0.5)..style = PaintingStyle.fill;
     
     const spacing = 30.0; // Tighter grid
 

@@ -14,6 +14,9 @@ local.properties
 src/
 .env
 
+# OAuth credentials
+oauth.json
+
 # IntelliJ related
 *.iml
 *.ipr

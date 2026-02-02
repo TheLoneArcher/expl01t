@@ -47,6 +47,13 @@ dependencies:
   fl_chart: ^0.70.1
   google_generative_ai: ^0.4.7
   flutter_dotenv: ^5.1.0
+  
+  # Google Calendar Integration
+  google_sign_in: ^6.2.1
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+  shared_preferences: ^2.3.3
 
 
 

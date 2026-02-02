@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:camp_x/utils/user_provider.dart';
+import 'package:camp_x/services/instructor_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -52,7 +53,7 @@ class _MarksTabState extends State<MarksTab> {
                 .snapshots(),
             builder: (context, marksSnapshot) {
               if (marksSnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)));
               }
               if (!marksSnapshot.hasData || marksSnapshot.data!.docs.isEmpty) {
                 return const Center(child: Text("No marks records found."));
@@ -62,7 +63,7 @@ class _MarksTabState extends State<MarksTab> {
               return StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance.collection('classes').doc('BTECH_3').collection('exams').snapshots(),
                 builder: (context, examsSnapshot) {
-                  if (!examsSnapshot.hasData) return const LinearProgressIndicator();
+                  if (!examsSnapshot.hasData) return const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)));
 
                   final marksDocs = marksSnapshot.data!.docs;
                   final examDocs = examsSnapshot.data!.docs;
@@ -73,9 +74,10 @@ class _MarksTabState extends State<MarksTab> {
 
                   // Map exam name to total marks for List view
                   final Map<String, int> examTotals = {
-                    for (var doc in examDocs) (doc.data() as Map)['name'] : (doc.data() as Map)['totalMarks'] ?? 100
+                    for (var doc in examDocs) 
+                      (doc.data() as Map)['name'] as String : ((doc.data() as Map)['totalMarks'] as num).toInt()
                   };
-                  return _buildListView(marksDocs, examTotals);
+                  return _buildListView(marksDocs, examTotals, user, targetUid);
                 }
               );
             },
@@ -85,7 +87,7 @@ class _MarksTabState extends State<MarksTab> {
     );
   }
 
-  Widget _buildListView(List<QueryDocumentSnapshot> docs, Map<String, int> examTotals) {
+  Widget _buildListView(List<QueryDocumentSnapshot> docs, Map<String, int> examTotals, Map<String, dynamic>? user, String targetUid) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: docs.length,
@@ -100,11 +102,17 @@ class _MarksTabState extends State<MarksTab> {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
-            side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+            side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
           ),
           child: ExpansionTile(
             title: Text(examName, style: GoogleFonts.orbitron(fontWeight: FontWeight.bold)),
             subtitle: Text("Total Possible: $totalMax"),
+            trailing: user?['role'] == 'instructor' 
+                ? IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    onPressed: () => _showEditMarksDialog(context, targetUid, examName, marks),
+                  ) 
+                : null,
             children: marks.entries.map((e) {
               final score = (e.value as num).toDouble();
               final perc = (score / totalMax * 100).toStringAsFixed(1);
@@ -120,6 +128,54 @@ class _MarksTabState extends State<MarksTab> {
           ),
         );
       },
+    );
+  }
+
+  void _showEditMarksDialog(BuildContext context, String uid, String examId, Map<String, dynamic> currentMarks) async {
+    final Map<String, int> marks = Map<String, int>.from(currentMarks.map((k, v) => MapEntry(k, (v as num).toInt())));
+    
+    // Fetch subjects
+    final subjectsSnapshot = await FirebaseFirestore.instance.collection('subjects').get();
+    final subjects = subjectsSnapshot.docs.map((doc) => doc.data()['name'] as String).toList();
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Edit Marks: $examId"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: subjects.map((sub) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: TextFormField(
+                initialValue: marks[sub]?.toString() ?? '',
+                decoration: InputDecoration(labelText: sub, hintText: 'Enter Marks'),
+                keyboardType: TextInputType.number,
+                onChanged: (val) => marks[sub] = int.tryParse(val) ?? 0,
+              ),
+            )).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              final result = await InstructorService().assignMarks(
+                uid: uid,
+                examId: examId,
+                marks: marks,
+              );
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'])));
+              }
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
     );
   }
 
@@ -205,8 +261,8 @@ class _MarksTabState extends State<MarksTab> {
                  begin: Alignment.topCenter,
                  end: Alignment.bottomCenter,
                  colors: [
-                   lineColors[i % lineColors.length].withOpacity(0.15),
-                   lineColors[i % lineColors.length].withOpacity(0.0),
+                   lineColors[i % lineColors.length].withValues(alpha: 0.15),
+                   lineColors[i % lineColors.length].withValues(alpha: 0.2),
                  ],
                ),
              ),
@@ -215,169 +271,144 @@ class _MarksTabState extends State<MarksTab> {
        }
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardColor.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      margin: const EdgeInsets.all(16),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+    return Center(
+      child: Container(
+        height: 300, 
+        width: 600,
+        constraints: const BoxConstraints(maxWidth: 600),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "SUCCESS TRACKER",
-                  style: GoogleFonts.orbitron(fontSize: 14, fontWeight: FontWeight.bold, color: theme.primaryColor, letterSpacing: 1.2),
-                ),
-                const Icon(Icons.analytics_outlined, size: 20, color: Colors.grey),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            // Legend
-            SizedBox(
-              height: 44,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: subjectsList.length,
-                itemBuilder: (context, i) {
-                  return Container(
-                    margin: const EdgeInsets.only(right: 20),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: lineColors[i % lineColors.length],
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(color: lineColors[i % lineColors.length].withOpacity(0.4), blurRadius: 6, spreadRadius: 1),
-                            ],
+             Padding(
+               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+               child: Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                 Text("Performance Trends", style: GoogleFonts.orbitron(fontSize: 14, fontWeight: FontWeight.bold, color: theme.primaryColor)),
+                 Icon(Icons.auto_graph, size: 16, color: theme.primaryColor.withValues(alpha: 0.7)),
+               ],
+             )),
+             const Divider(height: 1),
+             Expanded(
+               child: Padding(
+                  padding: const EdgeInsets.only(right: 24, left: 12, top: 16, bottom: 12),
+                  child: LineChart(
+                    LineChartData(
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        getDrawingHorizontalLine: (value) => FlLine(
+                          color: theme.dividerColor.withValues(alpha: 0.1),
+                          strokeWidth: 1,
+                        ),
+                      ),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            interval: 1,
+                            getTitlesWidget: (value, meta) {
+                              int index = value.toInt();
+                              if (index >= 0 && index < examNames.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    examNames[index].substring(0, 3).toUpperCase(),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          subjectsList[i].toUpperCase(),
-                          style: GoogleFonts.orbitron(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            
-            const SizedBox(height: 30),
-            
-            AspectRatio(
-              aspectRatio: 1.4,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 24, left: 12, bottom: 12),
-                child: LineChart(
-                  LineChartData(
-                    lineTouchData: LineTouchData(
-                      handleBuiltInTouches: true,
-                      touchTooltipData: LineTouchTooltipData(
-                        getTooltipColor: (_) => Colors.black87,
-                        maxContentWidth: 150,
-                        getTooltipItems: (touchedSpots) {
-                          return touchedSpots.map((spot) {
-                            return LineTooltipItem(
-                              '${subjectsList[spot.barIndex]}\n',
-                              GoogleFonts.orbitron(color: lineColors[spot.barIndex % lineColors.length], fontWeight: FontWeight.bold, fontSize: 10),
-                              children: [
-                                TextSpan(
-                                  text: '${spot.y.toStringAsFixed(1)}%',
-                                  style: GoogleFonts.exo2(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            );
-                          }).toList();
-                        },
-                      ),
-                    ),
-                    gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: true,
-                      horizontalInterval: 25,
-                      verticalInterval: 1,
-                      getDrawingHorizontalLine: (value) => FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
-                      getDrawingVerticalLine: (value) => FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
-                    ),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 34,
-                          interval: 1,
-                          getTitlesWidget: (value, meta) {
-                            int index = value.toInt();
-                            if (index >= 0 && index < examNames.length) {
-                               String name = examNames[index];
-                               if (name.length > 5) name = name.substring(0, 4) + '..';
-                               return SideTitleWidget(
-                                 meta: meta,
-                                 space: 10,
-                                 child: Text(name.toUpperCase(), style: GoogleFonts.orbitron(fontSize: 7, color: Colors.grey, fontWeight: FontWeight.bold)),
-                               );
-                            }
-                            return const Text('');
-                          },
-                        ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          interval: 25,
-                          reservedSize: 40,
-                          getTitlesWidget: (value, meta) => SideTitleWidget(
-                            meta: meta,
-                            child: Text('${value.toInt()}%', style: GoogleFonts.exo2(fontSize: 10, color: Colors.grey)),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            interval: 20,
+                            reservedSize: 40,
+                            getTitlesWidget: (value, meta) {
+                              return Text(
+                                '${value.toInt()}%',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+                              );
+                            },
                           ),
                         ),
                       ),
+                      borderData: FlBorderData(
+                        show: true,
+                        border: Border(
+                          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)),
+                          left: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)),
+                        ),
+                      ),
+                      minX: 0,
+                      maxX: (examNames.length - 1).toDouble(),
+                      minY: 0,
+                      maxY: 100,
+                      lineBarsData: lineBarsData,
                     ),
-                    borderData: FlBorderData(show: false),
-                    minX: 0,
-                    maxX: (examNames.length - 1).toDouble().clamp(0.1, 100),
-                    minY: 0,
-                    maxY: 110, // Margin at top
-                    lineBarsData: lineBarsData,
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildInfoNote("Showing growth across ${examNames.length} evaluated examinations."),
+               ),
+             ),
+             
+             const Divider(height: 1),
+             
+             // Legend Area
+             Padding(
+               padding: const EdgeInsets.all(12.0),
+               child: SizedBox(
+                 height: 30,
+                 child: ListView.builder(
+                   scrollDirection: Axis.horizontal,
+                   itemCount: subjectsList.length,
+                   itemBuilder: (context, i) {
+                     return Container(
+                       margin: const EdgeInsets.only(right: 16),
+                       child: Row(
+                         children: [
+                           Container(
+                             width: 8,
+                             height: 8,
+                             decoration: BoxDecoration(
+                               color: lineColors[i % lineColors.length],
+                               shape: BoxShape.circle,
+                             ),
+                           ),
+                           const SizedBox(width: 6),
+                           Text(
+                             subjectsList[i],
+                             style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                           ),
+                         ],
+                       ),
+                     );
+                   },
+                 ),
+               ),
+             ),
           ],
         ),
       ),
     );
-  }
 
-  Widget _buildInfoNote(String text) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.1)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, size: 16, color: Theme.of(context).primaryColor),
-          const SizedBox(width: 8),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 11, color: Colors.grey))),
-        ],
-      ),
-    );
   }
 }
 

@@ -75,7 +75,9 @@ class AnnouncementsView extends StatelessWidget {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
-                     final data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                     final doc = snapshot.data!.docs[index];
+                     final data = doc.data() as Map<String, dynamic>;
+                     final announcementId = doc.id;
                      final date = (data['date'] as Timestamp).toDate();
                      return Card(
                        margin: const EdgeInsets.only(bottom: 10),
@@ -83,12 +85,88 @@ class AnnouncementsView extends StatelessWidget {
                          title: Text(data['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
                          subtitle: Text("${data['content']}\n\nPosted by ${data['author']} on ${DateFormat('MMM d, h:mm a').format(date)}"),
                          isThreeLine: true,
+                         trailing: Row(
+                           mainAxisSize: MainAxisSize.min,
+                           children: [
+                             IconButton(
+                               icon: const Icon(Icons.edit, size: 20),
+                               onPressed: () => _showEditAnnouncementDialog(context, announcementId, data),
+                             ),
+                             IconButton(
+                               icon: const Icon(Icons.delete, size: 20, color: Colors.redAccent),
+                               onPressed: () => _confirmDeleteAnnouncement(context, announcementId),
+                             ),
+                           ],
+                         ),
                        ),
                      );
                   },
                 );
              },
           )
+        ],
+      ),
+    );
+  }
+  void _showEditAnnouncementDialog(BuildContext context, String id, Map<String, dynamic> currentData) {
+    final TextEditingController editTitleController = TextEditingController(text: currentData['title']);
+    final TextEditingController editContentController = TextEditingController(text: currentData['content']);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Edit Announcement"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: editTitleController, decoration: const InputDecoration(labelText: "Title")),
+            const SizedBox(height: 10),
+            TextField(controller: editContentController, maxLines: 4, decoration: const InputDecoration(labelText: "Message")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              if (editTitleController.text.isEmpty || editContentController.text.isEmpty) return;
+              await FirebaseFirestore.instance.collection('announcements').doc(id).update({
+                'title': editTitleController.text.trim(),
+                'content': editContentController.text.trim(),
+              });
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Announcement updated!")));
+              }
+            },
+            child: const Text("Update"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteAnnouncement(BuildContext context, String id) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Announcement?"),
+        content: const Text("This action cannot be undone."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final nav = Navigator.of(context);
+              try {
+                await FirebaseFirestore.instance.collection('announcements').doc(id).delete();
+                nav.pop();
+                messenger.showSnackBar(const SnackBar(content: Text("Announcement deleted!")));
+              } catch (e) {
+                messenger.showSnackBar(SnackBar(content: Text("Error: $e")));
+              }
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );

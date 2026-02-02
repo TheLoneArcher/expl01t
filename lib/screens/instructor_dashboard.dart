@@ -3,11 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:camp_x/utils/user_provider.dart'; // Ensure correct path
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
+// import 'package:intl/intl.dart'; // Removed unused import
 import 'package:camp_x/screens/tabs/calendar_tab.dart';
 import 'package:camp_x/screens/tabs/students_tab.dart';
 import 'package:camp_x/screens/landing_page.dart';
 import 'package:camp_x/screens/widgets/announcements_view.dart';
+
+
 
 
 
@@ -33,7 +35,7 @@ class _InstructorDashboardState extends State<InstructorDashboard> with SingleTi
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 7, vsync: this); // Adjusted length
   }
 
 
@@ -59,8 +61,11 @@ class _InstructorDashboardState extends State<InstructorDashboard> with SingleTi
       });
       _announcementTitleController.clear();
       _announcementContentController.clear();
+      _announcementContentController.clear();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Posted!")));
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       setState(() => _isPosting = false);
@@ -69,7 +74,6 @@ class _InstructorDashboardState extends State<InstructorDashboard> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final user = context.watch<UserProvider>().user;
 
     return Scaffold(
@@ -107,7 +111,9 @@ class _InstructorDashboardState extends State<InstructorDashboard> with SingleTi
           child: TabBarView(
             controller: _tabController,
             children: [
-              InstructorHomeView(user: user!),
+              user != null 
+                ? InstructorHomeView(user: user) 
+                : const Center(child: Text("Loading user data...")),
               const SyllabusTab(),
               const ChatTab(),
               const StudentsTab(),

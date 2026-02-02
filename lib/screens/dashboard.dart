@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:camp_x/screens/tabs/home_tab.dart';
 import 'package:camp_x/screens/tabs/calendar_tab.dart';
-import 'package:camp_x/screens/tabs/marks_tab.dart';
+import 'package:camp_x/screens/tabs/marks_tab.dart'; // Added MarksTab
 import 'package:camp_x/screens/tabs/profile_tab.dart';
 import 'package:camp_x/screens/tabs/chat_tab.dart';
 
@@ -49,7 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
             Tab(text: "HOME", icon: Icon(Icons.dashboard_outlined)),
             Tab(text: "CALENDAR", icon: Icon(Icons.calendar_today_outlined)),
             Tab(text: "AI CHAT", icon: Icon(Icons.psychology_outlined)),
-            Tab(text: "MARKS", icon: Icon(Icons.analytics_outlined)),
+            Tab(text: "MARKS", icon: Icon(Icons.analytics_outlined)), // Restored
             Tab(text: "PROFILE", icon: Icon(Icons.person_outline)),
           ],
         ),
@@ -63,7 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
               HomeTab(),
               CalendarTab(),
               ChatTab(),
-              MarksTab(),
+              MarksTab(), // Restored
               ProfileTab(),
             ],
           ),

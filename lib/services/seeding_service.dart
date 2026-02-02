@@ -1,400 +1,376 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:math';
 
 class SeedingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> seedFromJson(Map<String, dynamic> data) async {
-    // 1. Users
-    final batch = _firestore.batch();
-    final usersRef = _firestore.collection('users');
-    
-    for (var u in (data['students'] as List)) {
-      final userMap = Map<String, dynamic>.from(u);
-      batch.set(usersRef.doc(userMap['uid']), userMap);
-    }
-    for (var u in (data['instructors'] as List)) {
-       final userMap = Map<String, dynamic>.from(u);
-       batch.set(usersRef.doc(userMap['uid']), userMap);
-    }
-    await batch.commit();
-    print("   -> Users Uploaded");
-
-    // 2. Subjects (Top-level for SyllabusTab)
-    final subBatch = _firestore.batch();
-    final subRef = _firestore.collection('subjects');
-    for (var s in (data['subjects'] as List)) {
-      final subMap = Map<String, dynamic>.from(s);
-      subBatch.set(subRef.doc(subMap['name']), subMap);
-    }
-    await subBatch.commit();
-    print("   -> Subjects Uploaded");
-
-    // 2.1 Meetings (Top-level for InstructorHomeView)
-    if (data['meetings'] != null) {
-      final meetBatch = _firestore.batch();
-      final meetRef = _firestore.collection('meetings');
-      for (var m in (data['meetings'] as List)) {
-        final meetMap = Map<String, dynamic>.from(m);
-        meetBatch.set(meetRef.doc(), {
-          ...meetMap,
-          'time': Timestamp.fromDate(DateTime.parse(meetMap['time'])),
-        });
-      }
-      await meetBatch.commit();
-      print("   -> Meetings Uploaded");
-    }
-
-    // 3. Timetable
-    final ttBatch = _firestore.batch();
-    final ttMap = Map<String, dynamic>.from(data['timetable']);
-    ttMap.forEach((day, schedule) {
-      ttBatch.set(_firestore.collection('classes').doc('BTECH_3').collection('timetable').doc(day), Map<String, dynamic>.from(schedule));
-    });
-    await ttBatch.commit();
-    print("   -> Timetable Uploaded");
-
-    // 4. Exams
-    final examBatch = _firestore.batch();
-    for (var e in (data['exams'] as List)) {
-       final examMap = Map<String, dynamic>.from(e);
-       final examRef = _firestore.collection('classes').doc('BTECH_3').collection('exams').doc(examMap['name']);
-       examBatch.set(examRef, {
-         'name': examMap['name'],
-         'date': Timestamp.fromDate(DateTime.parse(examMap['date'])),
-         'totalMarks': examMap['total']
-       });
-       
-       if (examMap['isCompleted'] == true) {
-         for (var u in (data['students'] as List)) {
-            final student = Map<String, dynamic>.from(u);
-            Map<String, int> marks = {};
-            for (var s in (data['subjects'] as List)) {
-              final sub = Map<String, dynamic>.from(s);
-              marks[sub['name']] = 20; // Default pass
-            }
-            await _firestore.collection('users').doc(student['uid']).collection('marks').doc(examMap['name']).set({
-              ...marks, 'examId': examMap['name']
-            });
-         }
-       }
-    }
-    await examBatch.commit();
-    print("   -> Exams Uploaded");
-
-    // 5. Events & Attendance (Reuse existing logic or simplified)
-    await _seedEvents(); 
-    await _seedAcademicData(); 
-    print("   -> Events & Attendance Generated");
-  }
-
+  // Primary entry point for deep cleaning and re-seeding
   Future<void> seedDatabase() async {
-
     try {
-      if (kDebugMode) {
-        print("Starting Database Seeding...");
-      }
+      if (kDebugMode) print("Starting ULTIMATE Database Reconstruction...");
 
-      await _seedUsers();
+      // 1. GLOBAL WIPE: Clean EVERY collection used in the app
+      if (kDebugMode) print("   -> Performing ULTIMATE WIPE...");
+      await _deleteAllDocuments(_firestore.collection('users'));
+      await _deleteAllDocuments(_firestore.collection('subjects'));
+      await _deleteAllDocuments(_firestore.collection('events'));
+      await _deleteAllDocuments(_firestore.collection('meetings'));
+      await _deleteAllDocuments(_firestore.collection('announcements'));
+      
+      // Clear class-level data
+      final classRef = _firestore.collection('classes').doc('BTECH_3');
+      await _deleteAllDocuments(classRef.collection('exams'));
+      await _deleteAllDocuments(classRef.collection('homework'));
+      await _deleteAllDocuments(classRef.collection('timetable'));
+
+      // 2. WAIT for Firestore Consistency
+      if (kDebugMode) print("   -> Waiting for consistency...");
+      await Future.delayed(const Duration(seconds: 2));
+
+      // 3. SEED USERS (5 Students, 2 Instructors)
+      final studentList = await _seedUsers();
+
+      // 4. SEED METADATA (Subjects, Timetable, Meetings, Events, Announcements)
       await _seedSubjects();
       await _seedTimetable();
-      await _seedEvents();
       await _seedMeetings();
-      await _seedAcademicData(); // Attendance, Homework, Exams, Marks
+      await _seedEvents();
+      await _seedAnnouncements();
+
+      // 5. SEED ACADEMIC DATA (Exams, Marks, Attendance, Homework)
+      await _seedAcademicData(students: studentList);
 
       if (kDebugMode) {
-        print("Database Seeding Completed Successfully.");
+        print("--------------------------------------------------");
+        print("ULTIMATE RECONSTRUCTION COMPLETED SUCCESSFULLY");
+        print("--------------------------------------------------");
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("Error seeding database: $e");
-      }
+      if (kDebugMode) print("FATAL ERROR DURING SEEDING: $e");
       rethrow;
     }
   }
 
-  Future<void> _seedUsers() async {
+  Future<void> seedVariedAttendance() async {
+    // Exact 5 Student IDs
+    final List<String> studentUids = [
+      '23AK1A3601', '23AK1A3602', '23AK1A3603', '23AK1A3604', '23AK1A3605'
+    ];
+    
+    // Profiles matching requirement
+    final List<String> profiles = ['topper', 'topper', 'average', 'average', 'struggler'];
+    final Random r = Random();
+
+    try {
+      if (kDebugMode) print("🚀 Beginning randomization logic...");
+
+      for (int i = 0; i < studentUids.length; i++) {
+        final String uid = studentUids[i];
+        final String profile = profiles[i];
+        
+        DateTime cursor = DateTime(2026, 1, 1);
+        DateTime now = DateTime.now();
+        WriteBatch batch = _firestore.batch();
+        int opCount = 0;
+
+        if (kDebugMode) print("   -> Processing $uid ($profile)");
+
+        while (cursor.isBefore(now)) {
+          if (cursor.weekday <= 5) { // Mon-Fri
+            String dateStr = "${cursor.year}-${cursor.month.toString().padLeft(2, '0')}-${cursor.day.toString().padLeft(2, '0')}";
+            
+            // Get randomized period statuses based on student profile
+            Map<String, String> dayStatus = _generatePattern(profile, r);
+
+            final docRef = _firestore
+                .collection('users')
+                .doc(uid)
+                .collection('attendance')
+                .doc(dateStr);
+
+            batch.set(docRef, {
+              ...dayStatus,
+              'date': Timestamp.fromDate(cursor),
+              'status': dayStatus.values.contains('A') ? 'Partial' : 'Present',
+            }, SetOptions(merge: true));
+
+            opCount++;
+          }
+
+          // Commit every 400 operations to respect Firestore limits
+          if (opCount >= 400) {
+            await batch.commit();
+            batch = _firestore.batch();
+            opCount = 0;
+          }
+          cursor = cursor.add(const Duration(days: 1));
+        }
+        await batch.commit(); // Final student commit
+      }
+      if (kDebugMode) print("✅ Success: Attendance patterns varied.");
+    } catch (e) {
+      if (kDebugMode) print("❌ Error during randomization: $e");
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _seedUsers() async {
+    if (kDebugMode) print("   -> Seeding Users...");
+    
     final batch = _firestore.batch();
     final usersRef = _firestore.collection('users');
+    final List<Map<String, dynamic>> createdStudents = [];
 
-    // 5 Students
+    // EXACTLY 5 Students (3601 to 3605)
+    final profiles = ['topper', 'topper', 'average', 'average', 'struggler'];
     for (int i = 1; i <= 5; i++) {
-      String rollNo = "23AK1A36${i.toString().padLeft(2, '0')}";
-      batch.set(usersRef.doc(rollNo), {
+      String rollNo = "23AK1A360$i";
+      final studentData = {
         'uid': rollNo,
         'role': 'student',
         'name': 'Student $i',
-        'password': rollNo, // As requested
+        'password': rollNo,
         'classId': 'BTECH_3', 
         'email': '$rollNo@campx.edu',
-      });
+        'profile': profiles[i - 1],
+      };
+      batch.set(usersRef.doc(rollNo), studentData);
+      createdStudents.add(studentData);
     }
 
-    // 2 Instructors
+    // EXACTLY 2 Instructors (INSTR01, INSTR02)
     for (int i = 1; i <= 2; i++) {
-      String empId = "INSTR${i.toString().padLeft(2, '0')}";
+      String empId = "INSTR0$i";
       batch.set(usersRef.doc(empId), {
         'uid': empId,
         'role': 'instructor',
         'name': 'Instructor $i',
-        'password': empId, // As requested
+        'password': empId,
         'email': '$empId@campx.edu',
       });
     }
 
     await batch.commit();
+    if (kDebugMode) print("   -> Created 5 Students and 2 Instructors.");
+    return createdStudents;
   }
 
-  Future<void> _seedSubjects() async {
-    final subjects = [
-      {
-        'name': 'Machine Learning', 
-        'code': 'ML', 
-        'topics': [
-          {'name': 'Supervised Learning', 'status': 'covered'},
-          {'name': 'Unsupervised Learning', 'status': 'pending'},
-          {'name': 'Neural Networks', 'status': 'pending'},
-          {'name': 'SVM', 'status': 'pending'},
-        ]
-      },
-      {
-        'name': 'English', 
-        'code': 'ENG', 
-        'topics': [
-          {'name': 'Communication Skills', 'status': 'covered'},
-          {'name': 'Professional Writing', 'status': 'covered'},
-          {'name': 'Grammar & Vocab', 'status': 'pending'},
-        ]
-      },
-      {
-        'name': 'Blockchain', 
-        'code': 'BLK', 
-        'topics': [
-          {'name': 'Cryptography', 'status': 'covered'},
-          {'name': 'Consensus', 'status': 'covered'},
-          {'name': 'Ethereum', 'status': 'pending'},
-        ]
-      },
-      {
-        'name': 'Cyber Security', 
-        'code': 'CYB', 
-        'topics': [
-          {'name': 'Network Security', 'status': 'covered'},
-          {'name': 'Malware Analysis', 'status': 'pending'},
-          {'name': 'Web Security', 'status': 'pending'},
-        ]
-      },
-      {
-        'name': 'Databases', 
-        'code': 'DB', 
-        'topics': [
-          {'name': 'SQL Basics', 'status': 'covered'},
-          {'name': 'Normalization', 'status': 'pending'},
-          {'name': 'NoSQL Intro', 'status': 'pending'},
-        ]
-      },
-       {
-        'name': 'Python', 
-        'code': 'PY', 
-        'topics': [
-          {'name': 'Data Types', 'status': 'covered'},
-          {'name': 'Functions & Modules', 'status': 'pending'},
-          {'name': 'Pandas & NumPy', 'status': 'pending'},
-        ]
-      },
+  Future<void> _seedAcademicData({required List<Map<String, dynamic>> students}) async {
+    final List<String> subjects = ['Advanced Mathematics', 'Physics', 'Computer Science', 'Literature & Rhetoric', 'World History'];
+    final examsList = [
+      {'name': 'Quarterly 1', 'date': Timestamp.fromDate(DateTime(2025, 9, 15)), 'total': 50},
+      {'name': 'Mid Terms', 'date': Timestamp.fromDate(DateTime(2025, 12, 10)), 'total': 100},
+      {'name': 'Quarterly 2', 'date': Timestamp.fromDate(DateTime(2026, 2, 20)), 'total': 50},
+      {'name': 'Finals', 'date': Timestamp.fromDate(DateTime(2026, 4, 15)), 'total': 100},
     ];
-    final batch = _firestore.batch();
-    final subRef = _firestore.collection('subjects'); 
 
-    for (var sub in subjects) {
-      batch.set(subRef.doc(sub['name'] as String), sub);
+    final classDoc = _firestore.collection('classes').doc('BTECH_3');
+    final r = Random();
+    int range(int min, int max) => min + r.nextInt(max - min + 1);
+
+    // 1. Seed Exams to Class
+    WriteBatch examBatch = _firestore.batch();
+    for (var exam in examsList) {
+      examBatch.set(classDoc.collection('exams').doc(exam['name'] as String), {
+        'name': exam['name'],
+        'date': exam['date'],
+        'totalMarks': exam['total'],
+      });
+    }
+    await examBatch.commit();
+
+    // 2. Seed Marks & Attendance per Student
+    for (var student in students) {
+      final uid = student['uid'];
+      final profile = student['profile'];
+      if (kDebugMode) print("      * Seeding marks/attendance for $uid");
+
+      final studentMarksBatch = _firestore.batch();
+      for (var exam in examsList) {
+        String examName = exam['name'] as String;
+        int total = exam['total'] as int;
+        Map<String, dynamic> marksData = {'examId': examName};
+        
+        for (var sub in subjects) {
+          int score;
+          if (profile == 'topper') {
+            score = range((total * 0.88).round(), total);
+          } else if (profile == 'struggler') {
+            score = range((total * 0.35).round(), (total * 0.60).round());
+          } else {
+            score = range((total * 0.60).round(), (total * 0.88).round());
+          }
+          marksData[sub] = score;
+        }
+        studentMarksBatch.set(_firestore.collection('users').doc(uid).collection('marks').doc(examName), marksData);
+      }
+      await studentMarksBatch.commit();
+
+      // Attendance (Jan 2026 to Now) with Randomization
+      DateTime cursor = DateTime(2026, 1, 1);
+      DateTime now = DateTime.now();
+      WriteBatch attendanceBatch = _firestore.batch();
+      int attCount = 0;
+
+      while (cursor.isBefore(now)) {
+        if (cursor.weekday <= 5) {
+          String dateStr = "${cursor.year}-${cursor.month.toString().padLeft(2,'0')}-${cursor.day.toString().padLeft(2,'0')}";
+          Map<String, String> dayStatus = _generatePattern(profile, r);
+
+          attendanceBatch.set(_firestore.collection('users').doc(uid).collection('attendance').doc(dateStr), {
+            ...dayStatus,
+            'date': Timestamp.fromDate(cursor),
+            'status': dayStatus.values.contains('A') ? 'Partial' : 'Present',
+          });
+          attCount++;
+        }
+        
+        if (attCount >= 400) {
+          await attendanceBatch.commit();
+          attendanceBatch = _firestore.batch();
+          attCount = 0;
+        }
+        cursor = cursor.add(const Duration(days: 1));
+      }
+      await attendanceBatch.commit();
+    }
+
+    // 3. Seed Shared Homework & Student Homework Status
+    final hwBatch = _firestore.batch();
+    DateTime hwCursor = DateTime(2026, 1, 1);
+    while (hwCursor.isBefore(DateTime.now())) {
+      if (hwCursor.weekday <= 5) {
+        String dateStr = "${hwCursor.year}-${hwCursor.month.toString().padLeft(2,'0')}-${hwCursor.day.toString().padLeft(2,'0')}";
+        
+        // a. Class-level Shared Homework
+        hwBatch.set(classDoc.collection('homework').doc(dateStr), {
+          'date': Timestamp.fromDate(hwCursor),
+          'subject': subjects[hwCursor.day % subjects.length],
+          'description': 'Daily chapter review and exercises.',
+          'dueDate': Timestamp.fromDate(hwCursor.add(const Duration(days: 2))),
+          'assignedBy': 'INSTR01'
+        });
+
+        // b. Individual Student Status (Mark some as completed)
+        for (var student in students) {
+           final uid = student['uid'];
+           bool isDone = (uid.hashCode + hwCursor.day) % 2 == 0;
+           hwBatch.set(
+             _firestore.collection('users').doc(uid).collection('homework_status').doc(dateStr),
+             {'isCompleted': isDone}
+           );
+        }
+      }
+      hwCursor = hwCursor.add(const Duration(days: 1));
+    }
+    await hwBatch.commit();
+    if (kDebugMode) print("   -> Homework seeded successfully.");
+  }
+
+  // --- Helper Methods ---
+
+  Future<void> _seedSubjects() async {
+    final subjects = ['Advanced Mathematics', 'Physics', 'Computer Science', 'Literature & Rhetoric', 'World History'];
+    final batch = _firestore.batch();
+    for (var name in subjects) {
+      batch.set(_firestore.collection('subjects').doc(name), {
+        'name': name,
+        'code': name.substring(0, 3).toUpperCase(),
+        'topics': [{'name': 'Introduction', 'status': 'covered'}]
+      });
+    }
+    await batch.commit();
+  }
+
+  Future<void> _seedTimetable() async {
+    final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    final subjects = ['Advanced Mathematics', 'Physics', 'Computer Science', 'Literature & Rhetoric', 'World History'];
+    final batch = _firestore.batch();
+    for (var day in days) {
+      batch.set(_firestore.collection('classes').doc('BTECH_3').collection('timetable').doc(day), {
+        'p1': subjects[0], 'p2': subjects[1], 'p3': subjects[2], 'p4': subjects[3], 'p5': subjects[4]
+      });
     }
     await batch.commit();
   }
 
   Future<void> _seedMeetings() async {
-    final meetings = [
-      {
-        'title': 'Faculty Board Meeting',
-        'time': Timestamp.fromDate(DateTime.now().add(const Duration(hours: 2))),
-        'type': 'Online (Zoom)',
-        'link': 'https://zoom.us/j/campx_fac_123',
-      },
-      {
-        'title': 'Syllabus Review: ML',
-        'time': Timestamp.fromDate(DateTime.now().add(const Duration(days: 1, hours: 3))),
-        'type': 'Offline (Conf. Room A)',
-        'link': null,
-      },
-      {
-         'title': 'Parent Teacher Meet',
-         'time': Timestamp.fromDate(DateTime.now().add(const Duration(days: 2))),
-         'type': 'Online (GMeet)',
-         'link': 'https://meet.google.com/xyz-abc-123',
-      }
-    ];
-
     final batch = _firestore.batch();
-    final meetRef = _firestore.collection('meetings');
-
-    for (var m in meetings) {
-      batch.set(meetRef.doc(), m);
-    }
-    await batch.commit();
-  }
-
-
-  Future<void> _seedTimetable() async {
-    final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    final subjects = ['Machine Learning', 'English', 'Blockchain', 'Cyber Security', 'Databases', 'Python'];
-    final batch = _firestore.batch();
-    
-    // Simple mock timetable: 5 periods per day, cycling through subjects
-    int subIndex = 0;
-    
-    for (var day in days) {
-      Map<String, String> daySchedule = {};
-      for (int period = 1; period <= 5; period++) {
-        daySchedule['p$period'] = subjects[subIndex % subjects.length];
-        subIndex++;
-      }
-      
-      batch.set(
-        _firestore.collection('classes').doc('BTECH_3').collection('timetable').doc(day),
-        daySchedule,
-      );
-    }
+    batch.set(_firestore.collection('meetings').doc(), {
+      'title': 'General Faculty Meet',
+      'time': Timestamp.now(),
+      'type': 'Online',
+      'link': 'https://meet.google.com/campx'
+    });
     await batch.commit();
   }
 
   Future<void> _seedEvents() async {
     final batch = _firestore.batch();
-    final eventsRef = _firestore.collection('events');
+    batch.set(_firestore.collection('events').doc(), {
+      'title': 'Campus Tech Fest',
+      'date': Timestamp.fromDate(DateTime(2026, 2, 15)),
+      'description': 'Main auditorium event',
+      'location': 'Block A auditorium'
+    });
+    batch.set(_firestore.collection('events').doc(), {
+      'title': 'Final Exams Week',
+      'date': Timestamp.fromDate(DateTime(2026, 4, 15)),
+      'description': 'End of semester examinations',
+      'location': 'Examination Wing'
+    });
+    await batch.commit();
+  }
 
-    // Generate random events from April 2025 to May 2026
-    DateTime startDate = DateTime(2025, 4, 1);
-    DateTime endDate = DateTime(2026, 5, 30);
-    int eventCount = 10;
+  Future<void> _seedAnnouncements() async {
+    final batch = _firestore.batch();
+    batch.set(_firestore.collection('announcements').doc(), {
+      'title': 'Semester Fee Deadline',
+      'content': 'Please ensure all dues are cleared by the end of this month.',
+      'date': Timestamp.now(),
+      'author': 'Accounting Dept'
+    });
+    batch.set(_firestore.collection('announcements').doc(), {
+      'title': 'Library Hours Extended',
+      'content': 'Library will remain open until midnight during exam week.',
+      'date': Timestamp.fromDate(DateTime.now().subtract(const Duration(days: 1))),
+      'author': 'Library Admin'
+    });
+    await batch.commit();
+  }
 
-    for (int i = 0; i < eventCount; i++) {
-      int daysToAdd = (i * (endDate.difference(startDate).inDays / eventCount)).round();
-       DateTime eventDate = startDate.add(Duration(days: daysToAdd));
-       String eventId = 'evt_$i';
-       
-       batch.set(eventsRef.doc(eventId), {
-         'title': 'Event $i: Tech Symposium',
-         'date': Timestamp.fromDate(eventDate),
-         'description': 'A generic event for the campus.',
-         'location': 'Auditorium'
-       });
+  Future<void> _deleteAllDocuments(CollectionReference collection) async {
+    final snapshot = await collection.get();
+    final batch = _firestore.batch();
+    for (var doc in snapshot.docs) {
+      batch.delete(doc.reference);
     }
     await batch.commit();
   }
 
-  Future<void> _seedAcademicData() async {
-    // Exams Schedule
-    // 4 Quarterlies (30 marks)
-    // Half Year
-    // Prefinal (April)
-    // Final (May)
-    
-    final exams = [
-      {'name': 'Quarterly 1', 'date': DateTime(2025, 8, 15), 'total': 30, 'isCompleted': true},
-      {'name': 'Quarterly 2', 'date': DateTime(2025, 10, 15), 'total': 30, 'isCompleted': true},
-      {'name': 'Half Yearly', 'date': DateTime(2025, 12, 10), 'total': 100, 'isCompleted': true},
-      {'name': 'Quarterly 3', 'date': DateTime(2026, 2, 10), 'total': 30, 'isCompleted': true},
-      // Future/Current
-      {'name': 'Quarterly 4', 'date': DateTime(2026, 3, 20), 'total': 30, 'isCompleted': false},
+  // Profile-based probability logic
+  Map<String, String> _generatePattern(String profile, Random r) {
+    Map<String, String> periods = {};
+    double absenceChance;
 
-      {'name': 'Prefinal', 'date': DateTime(2026, 4, 10), 'total': 100, 'isCompleted': false},
-      {'name': 'Final', 'date': DateTime(2026, 5, 5), 'total': 100, 'isCompleted': false},
-    ];
-
-    final subjects = ['Machine Learning', 'English', 'Blockchain', 'Cyber Security', 'Databases', 'Python'];
-    
-    // Seed Exams
-    for (var exam in exams) {
-      await _firestore.collection('classes').doc('BTECH_3').collection('exams').doc(exam['name'] as String).set({
-        'name': exam['name'],
-        'date': Timestamp.fromDate(exam['date'] as DateTime),
-        'totalMarks': exam['total'],
-      });
-      
-      // If completed, seed marks for students
-      if (exam['isCompleted'] as bool) {
-         for (int i = 1; i <= 5; i++) {
-            String rollNo = "23AK1A36${i.toString().padLeft(2, '0')}";
-            Map<String, int> studentMarks = {};
-            for (var sub in subjects) {
-              // Random passing marks
-              studentMarks[sub] = 15 + (DateTime.now().millisecond % ((exam['total'] as int) - 15)); 
-            }
-            
-            await _firestore.collection('users').doc(rollNo).collection('marks').doc(exam['name'] as String).set({
-              ...studentMarks,
-              'examId': exam['name'],
-            });
-         }
-      }
+    if (profile == 'topper') {
+      absenceChance = 0.02;
+    } else if (profile == 'struggler') {
+      absenceChance = 0.22;
+    } else {
+      absenceChance = 0.07;
     }
 
-    // Homework & Attendance (Daily until Jan 30, 2026)
-    // Academic year starts April 2025 as requested
-    DateTime cursor = DateTime(2025, 4, 1);
-
-    DateTime cutoff = DateTime(2026, 1, 30);
-    
-    // To avoid hitting write limits in a single go, we might process in larger chunks or just simplistic batching
-    // For 5 students * ~200 days = 1000 attendance records per student -> 5000 writes. This is a lot.
-    // Optimization: Store attendance as one doc per month per student or just skip broad history seeding if not strictly needed.
-    // Request says: "attendance for all students for each period every day until January 30"
-    // I will optimize by doing "Attendance Summary" or just last 30 days to be safe on quota, 
-    // OR just use a simpler document structure: /attendance/{date}/{classId}/{rollNo}: status
-    
-    // Let's do a simplified approach: Only weekdays.
-    // Batching carefully.
-    
-    WriteBatch batch = _firestore.batch();
-    int batchCount = 0;
-    
-    while (cursor.isBefore(cutoff)) {
-      if (cursor.weekday <= 5) { // Mon-Fri
-        String dateStr = "${cursor.year}-${cursor.month.toString().padLeft(2,'0')}-${cursor.day.toString().padLeft(2,'0')}";
-        
-        // 1. Homework (Assigned every day)
-        // Pick a random subject
-        String subject = subjects[cursor.day % subjects.length];
-        DocumentReference hwRef = _firestore.collection('classes').doc('BTECH_3').collection('homework').doc(dateStr);
-        batch.set(hwRef, {
-            'date': Timestamp.fromDate(cursor),
-            'subject': subject,
-            'description': 'Chapter review and exercises for $subject',
-            'assignedBy': 'INSTR01'
-        });
-
-        // 2. Attendance (All students, present)
-        for (int i = 1; i <= 5; i++) {
-           String rollNo = "23AK1A36${i.toString().padLeft(2, '0')}";
-           // 5 periods
-           Map<String, String> periodStatus = {
-             'p1': 'P', 'p2': 'P', 'p3': 'P', 'p4': 'P', 'p5': 'P'
-           };
-           // Randomly absent
-           if ((cursor.day + i) % 15 == 0) periodStatus['p1'] = 'A';
-           
-           DocumentReference attRef = _firestore.collection('users').doc(rollNo).collection('attendance').doc(dateStr);
-           batch.set(attRef, periodStatus);
-        }
-
-        batchCount += (2 + 5); // 1 HW + 5 Students
-        if (batchCount >= 450) {
-          await batch.commit();
-          batch = _firestore.batch();
-          batchCount = 0;
-        }
+    for (int p = 1; p <= 5; p++) {
+      if (r.nextDouble() < absenceChance) {
+        periods['p$p'] = 'A';
+      } else if (r.nextDouble() < 0.05) {
+        periods['p$p'] = 'L';
+      } else {
+        periods['p$p'] = 'P';
       }
-      cursor = cursor.add(const Duration(days: 1));
     }
-    if (batchCount > 0) await batch.commit();
+    return periods;
   }
 }

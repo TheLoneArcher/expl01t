@@ -5,30 +5,32 @@ import 'package:camp_x/utils/theme_provider.dart';
 import 'package:camp_x/utils/user_provider.dart';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import dotenv
 import 'firebase_options.dart';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 
 void main() async {
   // Ensure Flutter is ready
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Try to load DotEnv but don't stop if it fails
+  // Load environment variables
   try {
     await dotenv.load(fileName: ".env");
-    print("Dotenv loaded");
   } catch (e) {
-    print("Using compile-time variables instead of .env");
+    debugPrint("Warning: .env file not found or invalid. API keys may be missing.");
   }
+
+
 
   // Try to load Firebase but don't stop if it fails
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print("Firebase initialized");
+    // print("Firebase initialized");
   } catch (e) {
-    print("Firebase error: $e");
+    // print("Firebase error: $e");
   }
 
   runApp(const CampXApp());

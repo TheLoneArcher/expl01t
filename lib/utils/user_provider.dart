@@ -41,7 +41,7 @@ class UserProvider with ChangeNotifier {
         return false;
       }
     } catch (e) {
-      print("Login Error: $e");
+      // print("Login Error: $e"); // Removed for production
       _isLoading = false;
       notifyListeners();
       return false;
